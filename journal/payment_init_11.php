@@ -52,13 +52,25 @@ $_SESSION['payment_session_id'] = $session_id;
 $_SESSION['payment_days'] = $days;
 $_SESSION['payment_target'] = $final_target;
 
-// Token FlexPay
-$authorization = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJcL2xvZ2luIiwicm9sZXMiOlsiTUVSQ0hBTlQiXSwiZXhwIjoxODM1ODcyOTYzLCJzdWIiOiIxNTkwYWRjNDJkMDBlMTQxZDBjODQ5ZDA3MjQ2NDkxMiJ9.wkSz-mu9d7uMSSZSGFJWSZDV2PmC99ckK496gQCxYuk";
+// FlexPay : journal/secrets.local.php ($GNTOMA_FLEXPAY_*), sinon variables d'environnement.
+$GNTOMA_FLEXPAY_AUTHORIZATION = '';
+$GNTOMA_FLEXPAY_MERCHANT = 'DGB';
+$secretsLocal = __DIR__ . '/secrets.local.php';
+if (is_readable($secretsLocal)) {
+    require $secretsLocal;
+}
+$authorization = (string) (getenv('GNTOMA_FLEXPAY_AUTHORIZATION') ?: ($GNTOMA_FLEXPAY_AUTHORIZATION ?? ''));
+$merchant = (string) (getenv('GNTOMA_FLEXPAY_MERCHANT') ?: ($GNTOMA_FLEXPAY_MERCHANT ?? 'DGB'));
+if ($authorization === '') {
+    error_log('GNTOMA payment_init: FlexPay authorization manquant (secrets.local.php ou GNTOMA_FLEXPAY_AUTHORIZATION).');
+    header('Location: dashboard_6.php?error=payment_failed');
+    exit;
+}
 
 // Préparation de la requête FlexPay
 $body = json_encode([
     'authorization' => $authorization,
-    'merchant' => "DGB",
+    'merchant' => $merchant,
     'reference' => $reference,
     'amount' => $amount,
     'currency' => 'USD',

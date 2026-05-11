@@ -1,5 +1,6 @@
 # GNTOMA — fichiers à ne pas versionner
 journal/config.local.php
+journal/secrets.local.php
 .env
 .env.*
 !.env.example

@@ -7,6 +7,8 @@ Ce document sert de source de verite pour maintenir la coherence UX, technique e
 
 La memoire continue du projet (etat, decisions, historique recent, priorites) est maintenue dans `PROJECT_MEMORY.md`.
 
+La carte des tables MySQL vers les scripts PHP est dans `DB_SCHEMA.md`.
+
 SaaS platform pour créer, gérer et monétiser des journaux numériques.
 
 ## Dépôt, local et production
@@ -24,6 +26,20 @@ SaaS platform pour créer, gérer et monétiser des journaux numériques.
 3. Sur l’hébergement (ex. gntoma.com), déposer le même `config.local.php` **hors** contrôle Git.
 
 Alternative : variables d’environnement `GNTOMA_DB_HOST`, `GNTOMA_DB_NAME`, `GNTOMA_DB_USER`, `GNTOMA_DB_PASSWORD`.
+
+## Configuration FlexPay (jeton marchand)
+
+Le jeton d’autorisation FlexPay ne doit pas rester dans le code versionné.
+
+1. Copier `journal/secrets.local.php.example` vers `journal/secrets.local.php` (fichier ignoré par Git, voir `.gitignore`).
+2. Renseigner `$GNTOMA_FLEXPAY_AUTHORIZATION` (JWT fourni par FlexPay) et éventuellement `$GNTOMA_FLEXPAY_MERCHANT`.
+3. Sur le serveur (gntoma.com), déposer le même `secrets.local.php` **hors** dépôt public si besoin.
+
+Alternative : variables d’environnement `GNTOMA_FLEXPAY_AUTHORIZATION` et `GNTOMA_FLEXPAY_MERCHANT` (prioritaires sur le fichier si définies).
+
+## Carte BDD → PHP
+
+Voir `DB_SCHEMA.md` pour une vue d’ensemble des tables principales et des points d’entrée PHP associés.
 
 ## Structure du Projet
 
