@@ -121,7 +121,7 @@ Regles identite:
 
 - Projet local: `C:\Users\USER\Documents\seth\gntoma`
 - Production: `https://gntoma.com`
-- Git: depot initialise localement; remote GitHub a ajouter sur le compte lie a **precieuxmwatha@gmail.com** (voir `README.md` section Git et GitHub)
+- Git: remote `origin` = **https://github.com/GNtoma/gntoma.git** (organisation **GNtoma**)
 - Base structure (reference): `sc3mwse0880_jm.sql` (fichier dump non versionne par defaut dans `.gitignore`)
 - Conventions formalisees dans `GNTOMA_CONVENTIONS.md`
 
@@ -154,6 +154,7 @@ A chaque intervention importante, mettre a jour au minimum:
 - [2026-05-11] Git: ajout `.gitignore`, externalisation BDD via `journal/config.local.php` (non versionne) + `config.local.php.example`, `git init` + premier commit; instructions GitHub dans `README.md` (compte precieuxmwatha@gmail.com). URLs: local `C:\Users\USER\Documents\seth\gntoma`, prod `https://gntoma.com`.
 - [2026-05-11] Economie / messages: prix journal **USD**; credits **1** par message, **50** par masse; `expires_at` **21 jours**; paiements en ligne = abonnement + credits messages (FlexPay); prix journal regle entre utilisateurs. UI approbation et code alignes (cout masse 50, devise USD, expiration bulk, texte avertissement).
 - [2026-05-11] Cron purge: `journal/cron_purge_expired_messages.php` (lots 500, notifications + PJ + lignes `messages`); `GNTOMA_CRON_LIGHT` dans `config.php` pour eviter le buffer PWA en CLI; doc `README.md`.
+- [2026-05-11] Remote GitHub officiel: `origin` -> `https://github.com/GNtoma/gntoma.git` (doc `README.md` + `PROJECT_MEMORY.md` alignes).
 
 ## 9) Risques / points d'attention
 
@@ -164,7 +165,7 @@ A chaque intervention importante, mettre a jour au minimum:
 
 ## 10) Prochaines actions recommandees
 
-1. Creer le depot sur GitHub (compte precieuxmwatha@gmail.com), `git remote add origin`, `git push -u origin main`.
+1. Pousser regulierement sur `origin` (`https://github.com/GNtoma/gntoma.git`) : `git push -u origin main` (authentification GitHub requise sur la machine).
 2. Externaliser secrets **SMTP / Flexpay** comme pour la BDD (fichiers locaux ou variables d'environnement).
 3. Creer `DB_SCHEMA.md` pour map rapide tables -> pages PHP.
 4. Concevoir le spec fonctionnel du module "journal verrouille + demande d'acces + discussion + proposition prix".

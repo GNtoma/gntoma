@@ -15,7 +15,7 @@ SaaS platform pour créer, gérer et monétiser des journaux numériques.
 |----------------|-------------|
 | Développement local | `C:\Users\USER\Documents\seth\gntoma` |
 | Site en ligne | [https://gntoma.com](https://gntoma.com) |
-| Historique Git (GitHub) | Créez le dépôt sur le compte associé à **precieuxmwatha@gmail.com**, puis `git remote add origin …` et `git push` (voir section ci-dessous). |
+| Historique Git (GitHub) | [https://github.com/GNtoma/gntoma](https://github.com/GNtoma/gntoma) — dépôt officiel du code source. |
 
 ## Configuration base de données
 
@@ -212,25 +212,19 @@ Sans secret configuré, l’URL renvoie **403** (le script ne doit pas être pub
 
 ## Git et GitHub
 
-Sur la machine locale, après `git init` et le premier commit :
+Dépôt distant : **https://github.com/GNtoma/gntoma.git**
 
-1. Sur [GitHub](https://github.com), connectez-vous avec le compte lié à **precieuxmwatha@gmail.com**.
-2. **New repository** → nom conseillé : `gntoma` → créez le dépôt (privé recommandé tant que le code évolue).
-3. Dans le dossier du projet :
+Sur une machine de développement où le dépôt est déjà cloné ou initialisé, le suivi distant doit pointer vers cette URL :
 
 ```bash
-git remote add origin https://github.com/VOTRE_UTILISATEUR/gntoma.git
+git remote add origin https://github.com/GNtoma/gntoma.git
+# ou, si origin existe déjà avec une mauvaise URL :
+# git remote set-url origin https://github.com/GNtoma/gntoma.git
 git branch -M main
 git push -u origin main
 ```
 
-Avec [GitHub CLI](https://cli.github.com/) (`gh`), si vous êtes déjà authentifié (`gh auth login`) :
-
-```bash
-gh repo create gntoma --private --source=. --remote=origin --push
-```
-
-L’**historique** du projet = commits sur `main` (ou branches `feature/*`). Les **Issues** et **Pull Requests** sur GitHub servent au suivi collaboratif.
+L’**historique** du projet correspond aux commits sur `main` (ou branches `feature/*`). Les **Issues** et **Pull Requests** sur GitHub servent au suivi collaboratif.
 
 ## Support
 
