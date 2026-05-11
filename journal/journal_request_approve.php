@@ -108,6 +108,57 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
                     error_log("Erreur notification réactivation : " . $e->getMessage());
                 }
                 
+                // Message inbox reel dans le thread auteur ↔ demandeur (coherence UX)
+                try {
+                    $author_code_str = (string) $author_code;
+                    $requester_code_str = (string) $request['requester_user_code'];
+                    $journal_title = (string) ($request['journal_title'] ?? '');
+                    $request_number = (string) ($request['request_number'] ?? '');
+
+                    $content = "Votre demande d'accès au journal {$journal_title} ({$request_number}) a été réactivée et est de nouveau en attente.";
+                    $preview = trim(substr((string) $content, 0, 100));
+
+                    $thread_stmt = $pdo->prepare("
+                        SELECT id FROM message_threads
+                        WHERE (participant_1 = ? AND participant_2 = ?)
+                           OR (participant_1 = ? AND participant_2 = ?)
+                        LIMIT 1
+                    ");
+                    $thread_stmt->execute([
+                        $author_code_str,
+                        $requester_code_str,
+                        $requester_code_str,
+                        $author_code_str
+                    ]);
+                    $thread_id = $thread_stmt->fetchColumn();
+
+                    if ($thread_id) {
+                        $thread_id = (int) $thread_id;
+                    } else {
+                        $insert_thread = $pdo->prepare("
+                            INSERT INTO message_threads (participant_1, participant_2, last_message_at, last_message_preview)
+                            VALUES (?, ?, NOW(), ?)
+                        ");
+                        $insert_thread->execute([$author_code_str, $requester_code_str, $preview]);
+                        $thread_id = (int) $pdo->lastInsertId();
+                    }
+
+                    $pdo->prepare("
+                        INSERT INTO messages (
+                            thread_id, sender_user_code, recipient_user_code,
+                            content, is_read, credits_consumed, expires_at
+                        ) VALUES (?, ?, ?, ?, 0, 0, DATE_ADD(NOW(), INTERVAL 21 DAY))
+                    ")->execute([$thread_id, $author_code_str, $requester_code_str, $content]);
+
+                    $pdo->prepare("
+                        UPDATE message_threads
+                        SET last_message_at = NOW(), last_message_preview = ?
+                        WHERE id = ?
+                    ")->execute([$preview, $thread_id]);
+                } catch (Throwable $e) {
+                    error_log("Erreur message inbox reactivation : " . $e->getMessage());
+                }
+                
                 $pdo->commit();
                 $success = "Demande réactivée avec succès ! Elle est maintenant en attente. Le demandeur a été notifié.";
             } else {
@@ -186,6 +237,65 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
                 } catch (Throwable $e) {
                     // Ne pas bloquer en cas d'erreur de notification
                     error_log("Erreur notification demandeur : " . $e->getMessage());
+                }
+
+                // Message inbox reel pour le demandeur (apres approve/reject)
+                try {
+                    $author_code_str = (string) $author_code;
+                    $requester_code_str = (string) $request['requester_user_code'];
+                    $journal_title = (string) ($request['journal_title'] ?? '');
+                    $request_number = (string) ($request['request_number'] ?? '');
+
+                    $base_content = $new_status === 'approved'
+                        ? "Votre demande d'accès au journal {$journal_title} ({$request_number}) a été approuvée. Vous pouvez maintenant lire le journal."
+                        : "Votre demande d'accès au journal {$journal_title} ({$request_number}) a été refusée.";
+
+                    $content = $base_content;
+                    $response_message_trim = trim((string) ($response_message ?? ''));
+                    if ($response_message_trim !== '') {
+                        $content .= "\n\nRéponse de l'auteur : " . $response_message_trim;
+                    }
+                    $preview = trim(substr((string) $base_content, 0, 100));
+
+                    $thread_stmt = $pdo->prepare("
+                        SELECT id FROM message_threads
+                        WHERE (participant_1 = ? AND participant_2 = ?)
+                           OR (participant_1 = ? AND participant_2 = ?)
+                        LIMIT 1
+                    ");
+                    $thread_stmt->execute([
+                        $author_code_str,
+                        $requester_code_str,
+                        $requester_code_str,
+                        $author_code_str
+                    ]);
+                    $thread_id = $thread_stmt->fetchColumn();
+
+                    if ($thread_id) {
+                        $thread_id = (int) $thread_id;
+                    } else {
+                        $insert_thread = $pdo->prepare("
+                            INSERT INTO message_threads (participant_1, participant_2, last_message_at, last_message_preview)
+                            VALUES (?, ?, NOW(), ?)
+                        ");
+                        $insert_thread->execute([$author_code_str, $requester_code_str, $preview]);
+                        $thread_id = (int) $pdo->lastInsertId();
+                    }
+
+                    $pdo->prepare("
+                        INSERT INTO messages (
+                            thread_id, sender_user_code, recipient_user_code,
+                            content, is_read, credits_consumed, expires_at
+                        ) VALUES (?, ?, ?, ?, 0, 0, DATE_ADD(NOW(), INTERVAL 21 DAY))
+                    ")->execute([$thread_id, $author_code_str, $requester_code_str, $content]);
+
+                    $pdo->prepare("
+                        UPDATE message_threads
+                        SET last_message_at = NOW(), last_message_preview = ?
+                        WHERE id = ?
+                    ")->execute([$preview, $thread_id]);
+                } catch (Throwable $e) {
+                    error_log("Erreur message inbox approve/reject : " . $e->getMessage());
                 }
 
                 $pdo->commit();
