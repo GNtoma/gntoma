@@ -8,9 +8,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 try {
-    $msg_u = $pdo->prepare("SELECT COUNT(*) as t FROM messages WHERE recipient_user_code = ? AND is_read = 0");
-    $msg_u->execute([$_SESSION['user_id']]);
-    $msg_unread = $msg_u->fetch()['t'] ?? 0;
+    $msg_unread = gntoma_unread_messages_in_inbox_count($pdo, (string) $_SESSION['user_id']);
     
     if ($msg_unread > 0) {
         $displayCount = $msg_unread > 99 ? '99+' : (string) $msg_unread;

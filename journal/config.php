@@ -194,4 +194,31 @@ if (!function_exists('gntoma_users_profile_pic_expr')) {
         return "NULL AS " . $asAlias;
     }
 }
+
+if (!function_exists('gntoma_unread_messages_in_inbox_count')) {
+    /**
+     * Messages non lus rattachés à une conversation de l'utilisateur uniquement
+     * (exclut les anciennes lignes sans thread_id, jamais marquables comme lues dans le chat).
+     */
+    function gntoma_unread_messages_in_inbox_count(PDO $pdo, string $userCode): int
+    {
+        try {
+            $stmt = $pdo->prepare("
+                SELECT COUNT(*) AS c
+                FROM messages m
+                INNER JOIN message_threads t ON t.id = m.thread_id
+                WHERE m.recipient_user_code = ?
+                  AND m.is_read = 0
+                  AND (t.participant_1 = ? OR t.participant_2 = ?)
+            ");
+            $stmt->execute([$userCode, $userCode, $userCode]);
+
+            return (int) ($stmt->fetchColumn() ?: 0);
+        } catch (Throwable $e) {
+            error_log('gntoma_unread_messages_in_inbox_count: ' . $e->getMessage());
+
+            return 0;
+        }
+    }
+}
 ?>

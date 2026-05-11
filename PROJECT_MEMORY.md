@@ -162,7 +162,7 @@ A chaque intervention importante, mettre a jour au minimum:
 - [2026-05-11] Cron purge: `journal/cron_purge_expired_messages.php` (lots 500, notifications + PJ + lignes `messages`); `GNTOMA_CRON_LIGHT` dans `config.php` pour eviter le buffer PWA en CLI; doc `README.md`.
 - [2026-05-11] Remote GitHub officiel: `origin` -> `https://github.com/GNtoma/gntoma.git` (doc `README.md` + `PROJECT_MEMORY.md` alignes).
 - [2026-05-11] `DB_SCHEMA.md`: carte rapide tables -> scripts PHP. FlexPay: surcharge optionnelle (`secrets.local.php` / env `GNTOMA_FLEXPAY_*`); **repli** = meme jeton embarque qu'avant — principe **ne pas casser** les deploiements existants.
-- [2026-05-11] Convention agent: regle Cursor `gntoma-git-workflow.mdc` (commit + `git push origin main` en fin de tache) + section **6bis** dans cette memoire.
+- [2026-05-11] Messagerie + demandes d'acces: notifications SYSTEM avec `thread_id` + fil commun auteur; compteur non lus = messages dans les fils de l'utilisateur (`gntoma_unread_messages_in_inbox_count`) — corrige badge fantome. Migration optionnelle `migration/003_orphan_system_messages_mark_read.sql`.
 
 ## 9) Risques / points d'attention
 

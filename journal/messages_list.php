@@ -65,14 +65,8 @@ try {
     $threads_stmt->execute([$user_code, $user_code, $user_code, $user_code, $user_code]);
     $threads = $threads_stmt->fetchAll();
     
-    // Compter les messages non lus totaux
-    $unread_stmt = $pdo->prepare("
-        SELECT COUNT(*) as total_unread 
-        FROM messages 
-        WHERE recipient_user_code = ? AND is_read = 0
-    ");
-    $unread_stmt->execute([$user_code]);
-    $total_unread = $unread_stmt->fetch()['total_unread'] ?? 0;
+    // Non lus : uniquement messages rattachés à une conversation (cohérent avec message_chat.php)
+    $total_unread = gntoma_unread_messages_in_inbox_count($pdo, $user_code);
     
 } catch (PDOException $e) {
     error_log("Erreur messagerie : " . $e->getMessage());

@@ -278,40 +278,47 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $journal && $is_paid_journal && !is
                 ");
                 $credit_stmt->execute([$requester_code]);
 
-                $pdo->commit();
-                
-                $success = "Votre demande d'accès a été envoyée ! L'auteur a été notifié automatiquement.<br>
-                          Il pourra approuver votre demande depuis son tableau de bord.<br>
-                          Votre numéro de suivi : <strong>{$request_number}</strong>";
-                
-                // Créer également une notification visible dans la messagerie de l'auteur
+                // Message inbox auteur : lier au fil SYSTEM ↔ auteur (sinon is_read reste bloqué et le badge ment).
                 try {
-                    $notif_msg_stmt = $pdo->prepare("
-                        INSERT INTO messages (sender_user_code, recipient_user_code, content, is_read)
-                        VALUES (?, ?, ?, 0)
-                    ");
+                    $author_code = (string) $journal['user_code'];
                     $notif_content = "Nouvelle demande d'accès au journal {$journal_code} ({$request_number}). Connectez-vous pour l'approuver ou la refuser.";
-                    $notif_msg_stmt->execute([
-                        'SYSTEM',
-                        $journal['user_code'],
-                        $notif_content
-                    ]);
-                    
-                    // Mettre à jour le thread correspondant
-                    $thread_stmt = $pdo->prepare("
-                        INSERT INTO message_threads (participant_1, participant_2, last_message_at, last_message_preview)
-                        VALUES (?, ?, NOW(), ?)
-                        ON DUPLICATE KEY UPDATE last_message_at = NOW(), last_message_preview = ?
+                    $preview = substr($notif_content, 0, 100);
+
+                    $threadSel = $pdo->prepare("
+                        SELECT id FROM message_threads
+                        WHERE participant_1 = 'SYSTEM' AND participant_2 = ?
+                        LIMIT 1
                     ");
-                    $thread_stmt->execute([
-                        'SYSTEM',
-                        $journal['user_code'],
-                        substr($notif_content, 0, 100),
-                        substr($notif_content, 0, 100)
-                    ]);
+                    $threadSel->execute([$author_code]);
+                    $tid = $threadSel->fetchColumn();
+                    if ($tid) {
+                        $tid = (int) $tid;
+                        $pdo->prepare("
+                            UPDATE message_threads
+                            SET last_message_at = NOW(), last_message_preview = ?
+                            WHERE id = ?
+                        ")->execute([$preview, $tid]);
+                    } else {
+                        $pdo->prepare("
+                            INSERT INTO message_threads (participant_1, participant_2, last_message_at, last_message_preview)
+                            VALUES ('SYSTEM', ?, NOW(), ?)
+                        ")->execute([$author_code, $preview]);
+                        $tid = (int) $pdo->lastInsertId();
+                    }
+
+                    $pdo->prepare("
+                        INSERT INTO messages (thread_id, sender_user_code, recipient_user_code, content, is_read, expires_at)
+                        VALUES (?, 'SYSTEM', ?, ?, 0, DATE_ADD(NOW(), INTERVAL 21 DAY))
+                    ")->execute([$tid, $author_code, $notif_content]);
                 } catch (Throwable $e) {
                     error_log("Erreur notification messagerie auteur : " . $e->getMessage());
                 }
+
+                $pdo->commit();
+
+                $success = "Votre demande d'accès a été envoyée ! L'auteur a été notifié automatiquement.<br>
+                          Il pourra approuver votre demande depuis son tableau de bord.<br>
+                          Votre numéro de suivi : <strong>{$request_number}</strong>";
             }
             }
         }

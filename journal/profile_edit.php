@@ -41,10 +41,8 @@ try {
         $msg_credits = ['remaining_credits' => 100, 'total_credits' => 100, 'used_credits' => 0];
     }
 
-    // Messages non lus
-    $unread_stmt = $pdo->prepare("SELECT COUNT(*) as total FROM messages WHERE recipient_user_code = ? AND is_read = 0");
-    $unread_stmt->execute([$user_code]);
-    $unread_count = $unread_stmt->fetch()['total'] ?? 0;
+    // Messages non lus (inbox conversations uniquement)
+    $unread_count = gntoma_unread_messages_in_inbox_count($pdo, $user_code);
 
     // Nombre de conversations
     $threads_stmt = $pdo->prepare("SELECT COUNT(*) as total FROM message_threads WHERE participant_1 = ? OR participant_2 = ?");
