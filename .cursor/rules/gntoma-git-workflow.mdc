@@ -1,0 +1,22 @@
+---
+description: Apres modifications GNTOMA — commit et push GitHub systematiques
+alwaysApply: true
+---
+
+# Flux Git GNTOMA (GNtoma/gntoma)
+
+## Apres une serie de modifications utiles
+
+1. `git status` — verifier les fichiers touches.
+2. `git add` les fichiers pertinents (eviter les secrets et fichiers ignores volontairement).
+3. `git commit -m "..."` avec un message clair en francais ou anglais coherent avec le depot.
+4. **`git push origin main`** pour synchroniser [https://github.com/GNtoma/gntoma](https://github.com/GNtoma/gntoma) — **a faire systematiquement** en fin de tache si l'environnement le permet (credentials GitHub deja configures sur la machine).
+
+## Ne pas versionner (voir `.gitignore`)
+
+- `journal/config.local.php`, `journal/secrets.local.php` — acces BDD / FlexPay locaux.
+- Dossiers `uploads/` — medias utilisateurs.
+- Dumps SQL complets (`sc3mwse0880_jm.sql`, etc.) — donnees perso et volume.
+- `vendor/`, `node_modules/`, caches IDE, `*.log`.
+
+L'objectif est un **depot complet du code et de la doc du projet**, pas une copie brute de la production (BDD, fichiers uploades, secrets).
