@@ -41,6 +41,27 @@ try {
 } catch (Throwable $e) {
     $days_expired = 0;
 }
+
+$payment_alert = '';
+if (isset($_GET['error'])) {
+    $msg = 'Erreur de paiement.';
+    if ($_GET['error'] === 'payment_failed') {
+        $msg = "Le paiement n'a pas pu être validé.";
+    } elseif ($_GET['error'] === 'payment_init_failed') {
+        $msg = 'Session de paiement invalide. Rechargez la page et réessayez.';
+    } elseif ($_GET['error'] === 'invalid_target') {
+        $msg = 'Code destinataire invalide.';
+    } elseif ($_GET['error'] === 'curl_error') {
+        $msg = 'Connexion au service de paiement impossible. Réessayez plus tard.';
+    } elseif ($_GET['error'] === 'http_error') {
+        $msg = 'Service de paiement temporairement indisponible.';
+    } elseif ($_GET['error'] === 'flexpay_error') {
+        $msg = 'Le service de paiement a refusé la demande. Réessayez ou contactez le support.';
+    }
+    $payment_alert = '<div class="bg-red-50 border border-red-200 text-red-800 text-sm font-bold p-4 rounded-2xl mb-6">' . htmlspecialchars($msg, ENT_QUOTES, 'UTF-8') . '</div>';
+} elseif (isset($_GET['success']) && $_GET['success'] === 'payment_success') {
+    $payment_alert = '<div class="bg-green-50 border border-green-200 text-green-800 text-sm font-bold p-4 rounded-2xl mb-6">Paiement validé ! <a href="dashboard_6.php" class="underline text-primary">Accéder au tableau de bord</a></div>';
+}
 ?>
 <!DOCTYPE html>
 <html lang="fr">
@@ -86,6 +107,7 @@ try {
 
         <!-- Titre -->
         <h1 class="text-2xl font-black text-dark text-center mb-2">Abonnement expiré</h1>
+        <?= $payment_alert ?>
         <p class="text-gray-500 text-center text-sm mb-6">
             Bonjour <?= htmlspecialchars($user['name']) ?>, votre temps d'utilisation est écoulé.
         </p>
@@ -108,6 +130,7 @@ try {
 
         <!-- Formulaire d'achat -->
         <form action="payment_init_11.php" method="POST" class="space-y-4">
+            <input type="hidden" name="csrf" value="<?= htmlspecialchars(gntoma_payment_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
             <div>
                 <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Choisir un forfait</label>
                 <select name="forfait" class="w-full bg-white border border-gray-200 rounded-2xl py-4 px-4 font-bold text-dark outline-none focus:ring-2 focus:ring-primary cursor-pointer">

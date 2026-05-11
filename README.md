@@ -38,6 +38,8 @@ Alternative : variables d’environnement `GNTOMA_DB_HOST`, `GNTOMA_DB_NAME`, `G
 
 **Priorité** : variables d’environnement `GNTOMA_FLEXPAY_AUTHORIZATION` et `GNTOMA_FLEXPAY_MERCHANT`, puis `secrets.local.php`, puis valeur par défaut embarquée.
 
+**URLs de retour FlexPay** : par défaut construites à partir de l’hôte de la requête (`HTTP_HOST` + `/journal`). Pour forcer une URL (reverse proxy, CLI), définir **`GNTOMA_PUBLIC_JOURNAL_URL`** (ex. `https://www.gntoma.com/journal`, sans slash final).
+
 ## Carte BDD → PHP
 
 Voir `DB_SCHEMA.md` pour une vue d’ensemble des tables principales et des points d’entrée PHP associés.

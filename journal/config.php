@@ -195,6 +195,65 @@ if (!function_exists('gntoma_users_profile_pic_expr')) {
     }
 }
 
+if (!function_exists('gntoma_payment_journal_base_url')) {
+    /**
+     * URL de base du dossier journal/ pour les callbacks FlexPay (sans slash final).
+     * GNTOMA_PUBLIC_JOURNAL_URL en priorité, sinon déduction depuis la requête HTTP.
+     */
+    function gntoma_payment_journal_base_url(): string
+    {
+        $env = trim((string) getenv('GNTOMA_PUBLIC_JOURNAL_URL'));
+        if ($env !== '') {
+            return rtrim($env, '/');
+        }
+
+        $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+            || (isset($_SERVER['SERVER_PORT']) && (string) $_SERVER['SERVER_PORT'] === '443')
+            || (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && strtolower((string) $_SERVER['HTTP_X_FORWARDED_PROTO']) === 'https')
+            || (isset($_SERVER['HTTP_X_FORWARDED_SSL']) && strtolower((string) $_SERVER['HTTP_X_FORWARDED_SSL']) === 'on');
+        $scheme = $https ? 'https' : 'http';
+        $host = (string) ($_SERVER['HTTP_HOST'] ?? 'www.gntoma.com');
+
+        return $scheme . '://' . $host . '/journal';
+    }
+}
+
+if (!function_exists('gntoma_payment_csrf_token')) {
+    /** Jeton CSRF formulaires paiement abonnement (session). */
+    function gntoma_payment_csrf_token(): string
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            return '';
+        }
+        if (empty($_SESSION['gntoma_payment_csrf']) || !is_string($_SESSION['gntoma_payment_csrf'])) {
+            $_SESSION['gntoma_payment_csrf'] = bin2hex(random_bytes(16));
+        }
+
+        return $_SESSION['gntoma_payment_csrf'];
+    }
+}
+
+if (!function_exists('gntoma_payment_validate_csrf')) {
+    function gntoma_payment_validate_csrf(string $posted): bool
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            return false;
+        }
+        $expected = $_SESSION['gntoma_payment_csrf'] ?? '';
+
+        return is_string($expected) && $expected !== '' && hash_equals($expected, $posted);
+    }
+}
+
+if (!function_exists('gntoma_payment_consume_csrf')) {
+    function gntoma_payment_consume_csrf(): void
+    {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            unset($_SESSION['gntoma_payment_csrf']);
+        }
+    }
+}
+
 if (!function_exists('gntoma_unread_messages_in_inbox_count')) {
     /**
      * Messages non lus rattachés à une conversation de l'utilisateur uniquement

@@ -207,6 +207,7 @@ if (isset($_GET['error'])) {
         </div>
         
         <form action="payment_init_11.php" method="POST" class="space-y-3">
+            <input type="hidden" name="csrf" value="<?= htmlspecialchars(gntoma_payment_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 
                 <div class="relative">

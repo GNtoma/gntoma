@@ -1,4 +1,4 @@
-<?php
+ <?php
 declare(strict_types=1);
 session_start();
 require_once 'config.php';
@@ -56,9 +56,10 @@ try {
         $expiry = (new DateTime())->modify('+48 hours');
     }
 
-    // Si l'abonnement est expiré, rediriger vers la page d'achat
+    // Si l'abonnement est expiré, rediriger vers la page d'achat (conserver ?error= / ?success= pour le paiement)
     if ($now > $expiry) {
-        header("Location: subscription_expired.php");
+        $qs = http_build_query($_GET);
+        header('Location: subscription_expired.php' . ($qs !== '' ? '?' . $qs : ''));
         exit;
     }
 
