@@ -129,6 +129,24 @@ Ajouter un cron job mensuel pour calculer le classement:
 0 0 1 * * curl http://votresite.com/journal/ranking_calculate.php
 ```
 
+### 7. Purge des messages expirés (21 jours)
+
+Les lignes `messages` portent une date `expires_at`. Le script `journal/cron_purge_expired_messages.php` supprime en lot les messages dépassés, les entrées liées dans `message_notifications`, et tente d’effacer les pièces jointes sous `uploads/messages/`.
+
+**CLI (recommandé si le serveur le permet)** — une fois par jour, depuis la racine du site :
+
+```bash
+cd /chemin/vers/gntoma/journal && php cron_purge_expired_messages.php
+```
+
+**HTTP (cPanel « Cron URL »)** — définir une variable d’environnement `GNTOMA_CRON_SECRET` (chaîne longue aléatoire), puis appeler quotidiennement :
+
+```text
+https://gntoma.com/journal/cron_purge_expired_messages.php?key=VOTRE_SECRET
+```
+
+Sans secret configuré, l’URL renvoie **403** (le script ne doit pas être public sans clé).
+
 ## Fonctionnalités
 
 ### Authentification
@@ -190,7 +208,7 @@ Ajouter un cron job mensuel pour calculer le classement:
 4. Configurer PHPMailer avec vos credentials SMTP
 5. Tester l'inscription et l'envoi d'email
 6. Tester le paiement
-7. Configurer le cron job pour le classement
+7. Configurer les tâches planifiées : classement (mensuel) et purge des messages expirés (quotidien, voir section **7. Purge des messages expirés** ci-dessus)
 
 ## Git et GitHub
 

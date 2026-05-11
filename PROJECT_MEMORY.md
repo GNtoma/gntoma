@@ -88,7 +88,7 @@ Regles identite:
 ### Messages (duree de vie)
 
 - Chaque message porte `expires_at` = **21 jours** apres envoi (`DATE_ADD(NOW(), INTERVAL 21 DAY)`), y compris les messages d'envoi de masse apres correction code.
-- La **suppression physique** apres expiration doit etre assuree par un **cron / tache planifiee** (a verifier sur l'hebergement; pas de script de purge identifie dans le depot au moment de la mise a jour).
+- La **suppression physique** apres expiration est assuree par `journal/cron_purge_expired_messages.php` (a planifier quotidiennement sur le serveur, CLI ou HTTP avec `GNTOMA_CRON_SECRET`).
 
 ### Monnaie journal et paiements
 
@@ -153,12 +153,13 @@ A chaque intervention importante, mettre a jour au minimum:
 - [2026-05-11] Clarification credits: les credits servent a l'**envoi de messages** (`message_credits`) et a l'**envoi de demandes d'acces** pour journaux **payants** (`users.access_request_credits` + `access_requests`).
 - [2026-05-11] Git: ajout `.gitignore`, externalisation BDD via `journal/config.local.php` (non versionne) + `config.local.php.example`, `git init` + premier commit; instructions GitHub dans `README.md` (compte precieuxmwatha@gmail.com). URLs: local `C:\Users\USER\Documents\seth\gntoma`, prod `https://gntoma.com`.
 - [2026-05-11] Economie / messages: prix journal **USD**; credits **1** par message, **50** par masse; `expires_at` **21 jours**; paiements en ligne = abonnement + credits messages (FlexPay); prix journal regle entre utilisateurs. UI approbation et code alignes (cout masse 50, devise USD, expiration bulk, texte avertissement).
+- [2026-05-11] Cron purge: `journal/cron_purge_expired_messages.php` (lots 500, notifications + PJ + lignes `messages`); `GNTOMA_CRON_LIGHT` dans `config.php` pour eviter le buffer PWA en CLI; doc `README.md`.
 
 ## 9) Risques / points d'attention
 
 - Secrets/config potentiellement en clair dans des fichiers PHP de prod.
 - Dump SQL contient des donnees reelles (a anonymiser pour environnements dev/partage).
-- **Purge messages expires**: verifier qu'un cron serveur supprime (ou archive) les lignes `messages` apres `expires_at` — non present dans le depot au scan actuel.
+- **Purge messages expires**: script `journal/cron_purge_expired_messages.php` + tache planifiee (voir `README.md`).
 - **Ecart schema / produit (suiveurs actifs)**: la table `author_follows` dans `sc3mwse0880_jm.sql` n'a pas de champ de **fin de validite** du suivi (`expires_at` ou lie a l'abonnement du follower). La regle "ne compter que les suiveurs avec du temps restant" demande une **evolution BDD + logique** (cron ou calcul a la volee). **Independamment**, les **credits** au sens GNTOMA actuel servent aux **messages** et aux **demandes d'acces journaux payants** (pas confondre avec cette regle de comptage des suiveurs tant que la source du "temps suiveur" n'est pas figee).
 
 ## 10) Prochaines actions recommandees

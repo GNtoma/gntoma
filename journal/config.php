@@ -91,42 +91,45 @@ if (!function_exists('gntoma_ui_background_markup')) {
     }
 }
 
-if (!defined('GNTOMA_PWA_BUFFER_STARTED')) {
-    define('GNTOMA_PWA_BUFFER_STARTED', true);
-    
-    // PRÉ-CALCUL : On génère le HTML avant de démarrer le buffer de sortie
-    // car PHP interdit d'appeler ob_start() à l'intérieur d'un callback ob_start()
-    $gntomaPreRenderedPwa = gntoma_pwa_markup();
-    $gntomaPreRenderedUiHead = gntoma_ui_head_markup();
-    $gntomaPreRenderedUiBg = gntoma_ui_background_markup();
+// Scripts CLI / cron : definir GNTOMA_CRON_LIGHT a true avant require pour eviter ob_start PWA/UI.
+if (!(defined('GNTOMA_CRON_LIGHT') && GNTOMA_CRON_LIGHT === true)) {
+    if (!defined('GNTOMA_PWA_BUFFER_STARTED')) {
+        define('GNTOMA_PWA_BUFFER_STARTED', true);
 
-    ob_start(static function (string $buffer) use ($gntomaPreRenderedPwa, $gntomaPreRenderedUiHead, $gntomaPreRenderedUiBg): string {
-        try {
-            if (stripos($buffer, '</head>') !== false) {
-                $headMarkup = '';
+        // PRÉ-CALCUL : On génère le HTML avant de démarrer le buffer de sortie
+        // car PHP interdit d'appeler ob_start() à l'intérieur d'un callback ob_start()
+        $gntomaPreRenderedPwa = gntoma_pwa_markup();
+        $gntomaPreRenderedUiHead = gntoma_ui_head_markup();
+        $gntomaPreRenderedUiBg = gntoma_ui_background_markup();
 
-                if (stripos($buffer, 'rel="manifest"') === false) {
-                    $headMarkup .= $gntomaPreRenderedPwa . PHP_EOL;
+        ob_start(static function (string $buffer) use ($gntomaPreRenderedPwa, $gntomaPreRenderedUiHead, $gntomaPreRenderedUiBg): string {
+            try {
+                if (stripos($buffer, '</head>') !== false) {
+                    $headMarkup = '';
+
+                    if (stripos($buffer, 'rel="manifest"') === false) {
+                        $headMarkup .= $gntomaPreRenderedPwa . PHP_EOL;
+                    }
+
+                    if (stripos($buffer, 'gntoma-ui-ready') === false) {
+                        $headMarkup .= $gntomaPreRenderedUiHead . PHP_EOL;
+                    }
+
+                    if ($headMarkup !== '') {
+                        $buffer = (string) preg_replace('/<\/head>/i', $headMarkup . '</head>', $buffer, 1);
+                    }
                 }
 
-                if (stripos($buffer, 'gntoma-ui-ready') === false) {
-                    $headMarkup .= $gntomaPreRenderedUiHead . PHP_EOL;
+                if (stripos($buffer, '<body') !== false && stripos($buffer, 'gntoma-ui-background') === false) {
+                    $buffer = (string) preg_replace('/(<body[^>]*>)/i', '$1' . PHP_EOL . $gntomaPreRenderedUiBg, $buffer, 1);
                 }
-
-                if ($headMarkup !== '') {
-                    $buffer = (string) preg_replace('/<\/head>/i', $headMarkup . '</head>', $buffer, 1);
-                }
+            } catch (Throwable $e) {
+                error_log('Erreur callback ob_start GNTOMA : ' . $e->getMessage());
             }
 
-            if (stripos($buffer, '<body') !== false && stripos($buffer, 'gntoma-ui-background') === false) {
-                $buffer = (string) preg_replace('/(<body[^>]*>)/i', '$1' . PHP_EOL . $gntomaPreRenderedUiBg, $buffer, 1);
-            }
-        } catch (Throwable $e) {
-            error_log('Erreur callback ob_start GNTOMA : ' . $e->getMessage());
-        }
-
-        return $buffer;
-    });
+            return $buffer;
+        });
+    }
 }
 
 try {
