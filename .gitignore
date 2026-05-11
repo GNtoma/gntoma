@@ -1,0 +1,34 @@
+# GNTOMA — fichiers à ne pas versionner
+journal/config.local.php
+.env
+.env.*
+!.env.example
+
+# Médias et uploads utilisateurs
+uploads/
+**/uploads/
+
+# Dépendances / outils
+vendor/
+node_modules/
+
+# OS / IDE
+Thumbs.db
+Desktop.ini
+.DS_Store
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs & cache PHP
+*.log
+php_errors.log
+
+# Dump SQL complet (données perso + volumineux) — ne pas versionner
+sc3mwse0880_jm.sql
+___sc3mwse0880_jm.sql
+
+# Archives
+*.zip
+*.tar.gz

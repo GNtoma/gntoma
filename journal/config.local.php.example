@@ -1,0 +1,9 @@
+<?php
+/**
+ * Copier ce fichier vers config.local.php et renseigner les accès.
+ * Le fichier config.local.php ne doit jamais être commité (voir .gitignore).
+ */
+$host = 'localhost';
+$dbname = 'nom_base';
+$username = 'utilisateur_mysql';
+$password_db = 'mot_de_passe_mysql';

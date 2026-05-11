@@ -1,0 +1,19 @@
+{
+  "name": "GNTOMA",
+  "short_name": "GNTOMA",
+  "description": "Application GNTOMA pour lire, gérer et partager des journaux privés.",
+  "start_url": "/index.php",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#F5F5F7",
+  "theme_color": "#007AFF",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/images/logo.png",
+      "sizes": "750x750",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
