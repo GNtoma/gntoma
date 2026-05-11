@@ -29,13 +29,14 @@ Alternative : variables d’environnement `GNTOMA_DB_HOST`, `GNTOMA_DB_NAME`, `G
 
 ## Configuration FlexPay (jeton marchand)
 
-Le jeton d’autorisation FlexPay ne doit pas rester dans le code versionné.
+**Comportement par défaut** : sans fichier ni variable d’environnement, `payment_init_11.php` utilise le **même jeton qu’avant** (gntoma.com continue de fonctionner après un simple déploiement).
 
-1. Copier `journal/secrets.local.php.example` vers `journal/secrets.local.php` (fichier ignoré par Git, voir `.gitignore`).
-2. Renseigner `$GNTOMA_FLEXPAY_AUTHORIZATION` (JWT fourni par FlexPay) et éventuellement `$GNTOMA_FLEXPAY_MERCHANT`.
-3. Sur le serveur (gntoma.com), déposer le même `secrets.local.php` **hors** dépôt public si besoin.
+**Optionnel (recommandé à terme pour la sécurité)** : surcharger le jeton sans le mettre dans Git :
 
-Alternative : variables d’environnement `GNTOMA_FLEXPAY_AUTHORIZATION` et `GNTOMA_FLEXPAY_MERCHANT` (prioritaires sur le fichier si définies).
+1. Copier `journal/secrets.local.php.example` vers `journal/secrets.local.php` (ignoré par Git).
+2. Renseigner `$GNTOMA_FLEXPAY_AUTHORIZATION` (et éventuellement `$GNTOMA_FLEXPAY_MERCHANT`).
+
+**Priorité** : variables d’environnement `GNTOMA_FLEXPAY_AUTHORIZATION` et `GNTOMA_FLEXPAY_MERCHANT`, puis `secrets.local.php`, puis valeur par défaut embarquée.
 
 ## Carte BDD → PHP
 

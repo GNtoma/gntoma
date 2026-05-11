@@ -156,11 +156,11 @@ A chaque intervention importante, mettre a jour au minimum:
 - [2026-05-11] Economie / messages: prix journal **USD**; credits **1** par message, **50** par masse; `expires_at` **21 jours**; paiements en ligne = abonnement + credits messages (FlexPay); prix journal regle entre utilisateurs. UI approbation et code alignes (cout masse 50, devise USD, expiration bulk, texte avertissement).
 - [2026-05-11] Cron purge: `journal/cron_purge_expired_messages.php` (lots 500, notifications + PJ + lignes `messages`); `GNTOMA_CRON_LIGHT` dans `config.php` pour eviter le buffer PWA en CLI; doc `README.md`.
 - [2026-05-11] Remote GitHub officiel: `origin` -> `https://github.com/GNtoma/gntoma.git` (doc `README.md` + `PROJECT_MEMORY.md` alignes).
-- [2026-05-11] `DB_SCHEMA.md`: carte rapide tables -> scripts PHP. FlexPay: jeton sorti de `payment_init_11.php` vers `secrets.local.php` / env `GNTOMA_FLEXPAY_*` + `secrets.local.php.example` + `.gitignore`.
+- [2026-05-11] `DB_SCHEMA.md`: carte rapide tables -> scripts PHP. FlexPay: surcharge optionnelle (`secrets.local.php` / env `GNTOMA_FLEXPAY_*`); **repli** = meme jeton embarque qu'avant — principe **ne pas casser** les deploiements existants.
 
 ## 9) Risques / points d'attention
 
-- Secrets: **FlexPay** — jeton hors code via `journal/secrets.local.php` (voir `secrets.local.php.example`) ou `GNTOMA_FLEXPAY_*` ; autres secrets/config encore a auditer (SMTP si migration hors `mail()`).
+- Secrets: **FlexPay** — surcharge possible via `secrets.local.php` ou `GNTOMA_FLEXPAY_*`; sinon le code conserve le **jeton par defaut historique** (pratique operationnelle, a externaliser plus tard si vous voulez retirer le secret du depot). Autres secrets/config encore a auditer (SMTP si migration hors `mail()`).
 - Dump SQL contient des donnees reelles (a anonymiser pour environnements dev/partage).
 - **Purge messages expires**: script `journal/cron_purge_expired_messages.php` + tache planifiee (voir `README.md`).
 - **Ecart schema / produit (suiveurs actifs)**: la table `author_follows` dans `sc3mwse0880_jm.sql` n'a pas de champ de **fin de validite** du suivi (`expires_at` ou lie a l'abonnement du follower). La regle "ne compter que les suiveurs avec du temps restant" demande une **evolution BDD + logique** (cron ou calcul a la volee). **Independamment**, les **credits** au sens GNTOMA actuel servent aux **messages** et aux **demandes d'acces journaux payants** (pas confondre avec cette regle de comptage des suiveurs tant que la source du "temps suiveur" n'est pas figee).
@@ -168,7 +168,7 @@ A chaque intervention importante, mettre a jour au minimum:
 ## 10) Prochaines actions recommandees
 
 1. Pousser regulierement sur `origin` (`https://github.com/GNtoma/gntoma.git`) : `git push -u origin main` (authentification GitHub requise sur la machine).
-2. Sur chaque environnement (local + gntoma.com): creer `journal/secrets.local.php` avec le jeton FlexPay (apres pull du retrait du JWT du code).
+2. (Optionnel) Externaliser le jeton FlexPay via `secrets.local.php` ou variables d'environnement si vous voulez retirer le secret du code versionne — **sans obligation**, le site fonctionne avec le repli par defaut.
 3. Externaliser d'autres secrets (**SMTP** si abandon de `mail()`, autres cles) comme pour la BDD.
 4. Concevoir le spec fonctionnel du module "journal verrouille + demande d'acces + discussion + proposition prix".
 5. Concevoir le spec fonctionnel du module "demandes documentaires" (workflow complet demande -> echanges -> livraison).

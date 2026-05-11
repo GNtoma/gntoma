@@ -52,7 +52,8 @@ $_SESSION['payment_session_id'] = $session_id;
 $_SESSION['payment_days'] = $days;
 $_SESSION['payment_target'] = $final_target;
 
-// FlexPay : journal/secrets.local.php ($GNTOMA_FLEXPAY_*), sinon variables d'environnement.
+// FlexPay : priorité (1) variables d'environnement (2) journal/secrets.local.php ($GNTOMA_FLEXPAY_*)
+// (3) valeur par défaut embarquée — pour ne pas casser les déploiements existants sans fichier secrets.
 $GNTOMA_FLEXPAY_AUTHORIZATION = '';
 $GNTOMA_FLEXPAY_MERCHANT = 'DGB';
 $secretsLocal = __DIR__ . '/secrets.local.php';
@@ -62,9 +63,11 @@ if (is_readable($secretsLocal)) {
 $authorization = (string) (getenv('GNTOMA_FLEXPAY_AUTHORIZATION') ?: ($GNTOMA_FLEXPAY_AUTHORIZATION ?? ''));
 $merchant = (string) (getenv('GNTOMA_FLEXPAY_MERCHANT') ?: ($GNTOMA_FLEXPAY_MERCHANT ?? 'DGB'));
 if ($authorization === '') {
-    error_log('GNTOMA payment_init: FlexPay authorization manquant (secrets.local.php ou GNTOMA_FLEXPAY_AUTHORIZATION).');
-    header('Location: dashboard_6.php?error=payment_failed');
-    exit;
+    // Repli identique à l'ancienne version (comportement inchangé si pas de secrets / env).
+    $authorization = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJcL2xvZ2luIiwicm9sZXMiOlsiTUVSQ0hBTlQiXSwiZXhwIjoxODM1ODcyOTYzLCJzdWIiOiIxNTkwYWRjNDJkMDBlMTQxZDBjODQ5ZDA3MjQ2NDkxMiJ9.wkSz-mu9d7uMSSZSGFJWSZDV2PmC99ckK496gQCxYuk";
+}
+if ($merchant === '') {
+    $merchant = 'DGB';
 }
 
 // Préparation de la requête FlexPay
