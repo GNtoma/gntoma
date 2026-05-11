@@ -316,7 +316,7 @@ $success = $_GET['success'] ?? null;
                         </div>
                         <div>
                             <p class="font-bold text-dark text-sm">Message groupé</p>
-                            <p class="text-[10px] text-gray-500">Filtrer par sexe, ville, âge • 100 crédits</p>
+                            <p class="text-[10px] text-gray-500">Filtrer par sexe, ville, âge • 50 crédits</p>
                         </div>
                     </div>
                     <svg class="h-5 w-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>

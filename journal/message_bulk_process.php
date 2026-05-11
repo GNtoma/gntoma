@@ -16,7 +16,7 @@ if (!isset($_SESSION['user_id']) || $_SERVER['REQUEST_METHOD'] !== 'POST') {
 }
 
 $user_code = $_SESSION['user_id'];
-$BULK_COST = 100;
+$BULK_COST = 50;
 
 // Récupérer les données
 $filter_gender = $_POST['filter_gender'] ?? 'all';
@@ -175,8 +175,8 @@ try {
         $message_stmt = $pdo->prepare("
             INSERT INTO messages (thread_id, sender_user_code, recipient_user_code, content,
                                   is_bulk, bulk_filter_criteria, has_attachment, attachment_path, 
-                                  attachment_type, keywords, credits_consumed)
-            VALUES (?, ?, ?, ?, TRUE, ?, ?, ?, ?, ?, 0)
+                                  attachment_type, keywords, expires_at, credits_consumed)
+            VALUES (?, ?, ?, ?, TRUE, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 21 DAY), 0)
         ");
         $message_stmt->execute([
             $thread_id, $user_code, $recipient_code, $content,
@@ -195,7 +195,7 @@ try {
         $recipient_count++;
     }
     
-    // Déduire les crédits (100 crédits pour tout le groupe)
+    // Déduire les crédits (50 crédits pour tout l'envoi de masse, quel que soit le nombre de destinataires)
     $pdo->prepare("
         UPDATE message_credits 
         SET used_credits = used_credits + ?, remaining_credits = remaining_credits - ?

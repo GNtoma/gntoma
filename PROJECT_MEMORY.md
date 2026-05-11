@@ -81,8 +81,20 @@ Regles identite:
 
 ### Credits (messages et demandes journaux payants)
 
-- **Messages**: solde dans `message_credits` (`remaining_credits`), consomme a chaque envoi (voir `message_send_process.php`).
+- **Messages (unitaire)**: **1 credit** par message envoye (`message_credits.remaining_credits`, `message_send_process.php`).
+- **Messages en masse**: **50 credits** par campagne (filtres + envoi groupe), quel que soit le nombre de destinataires (`message_bulk_process.php`, `message_send.php` mode bulk).
 - **Demandes d'acces aux journaux `paid`**: compteur `users.access_request_credits`, decremente lors de la creation d'une demande dans `access_requests` (`journal_access_request.php`).
+
+### Messages (duree de vie)
+
+- Chaque message porte `expires_at` = **21 jours** apres envoi (`DATE_ADD(NOW(), INTERVAL 21 DAY)`), y compris les messages d'envoi de masse apres correction code.
+- La **suppression physique** apres expiration doit etre assuree par un **cron / tache planifiee** (a verifier sur l'hebergement; pas de script de purge identifie dans le depot au moment de la mise a jour).
+
+### Monnaie journal et paiements
+
+- Le **prix affiche** pour un journal payant est en **USD** (`journals.price_currency` defaut `USD` a la creation dans `journal_create_traitement_10.php`).
+- **Paiements en ligne sur le site** (deja en place, ex. FlexPay): **abonnement / prolongation du temps** plateforme + **achat de credits messages**.
+- **Acces au contenu** d'un journal `paid`: reglement du montant journal en USD se negocie en pratique **entre auteur et lecteur** (messagerie, Mobile Money, etc.); ce n'est pas le meme flux que l'encaissement FlexPay des credits / abonnement.
 
 ### Suivi d'auteur vs acces a un journal
 
@@ -99,11 +111,11 @@ Regles identite:
 - Traiter l'acces aux journaux verrouilles comme une experience immersive (et pas un simple formulaire)
 - Integrer un flux "demande documentaire" avec budget/delai/qualite/categorie pro
 - Toujours clarifier les choix structurants avant implementation (pas de supposition critique)
-- Regle validee: apres acceptation d'une demande d'acces journal, l'acces est permanent (paiement gere hors site entre lecteurs et auteur)
+- Regle validee: apres acceptation d'une demande d'acces journal, l'acces au contenu est permanent; le reglement du **prix journal (USD)** se fait en pratique **entre utilisateurs** (hors passerelle journal), tandis que **abonnement + credits messages** sont payes **en ligne** sur GNTOMA (FlexPay, deja operationnel)
 - Statuts journal: `private` = auteur seul; `public` = ouvert sans validation; `paid` = visible comme offre mais acces contenu via demande + auteur
 - Suivi auteur: privilegier en recherche par mot-cle + gratification liee au volume de suiveurs **actifs** (duree de suivi a respecter)
 - Acces journal payant: une pending par lecteur/journal; acces indefini une fois approuve
-- Credits: **messages** (`message_credits`) + **demandes d'acces journaux payants** (`users.access_request_credits`) — aucun autre usage produit n'est documente pour l'instant
+- Credits: **1 credit / message**, **50 credits / envoi de masse**, plus **demandes d'acces journaux payants** (`users.access_request_credits`) — aucun autre usage produit n'est documente pour l'instant
 
 ## 6) Etat de reference (aujourd'hui)
 
@@ -140,12 +152,13 @@ A chaque intervention importante, mettre a jour au minimum:
 - [2026-05-11] Regles sociales: `follow_requests`/`author_follows` coexistent avec `access_requests`; suivi auteur = boost recherche par mot-cle + gratification; compteur suiveurs = uniquement suiveurs avec temps encore valide (schema actuel incomplet pour cette duree). Confirmation code: une seule `access_requests` pending par lecteur/journal dans `journal_access_request.php`.
 - [2026-05-11] Clarification credits: les credits servent a l'**envoi de messages** (`message_credits`) et a l'**envoi de demandes d'acces** pour journaux **payants** (`users.access_request_credits` + `access_requests`).
 - [2026-05-11] Git: ajout `.gitignore`, externalisation BDD via `journal/config.local.php` (non versionne) + `config.local.php.example`, `git init` + premier commit; instructions GitHub dans `README.md` (compte precieuxmwatha@gmail.com). URLs: local `C:\Users\USER\Documents\seth\gntoma`, prod `https://gntoma.com`.
+- [2026-05-11] Economie / messages: prix journal **USD**; credits **1** par message, **50** par masse; `expires_at` **21 jours**; paiements en ligne = abonnement + credits messages (FlexPay); prix journal regle entre utilisateurs. UI approbation et code alignes (cout masse 50, devise USD, expiration bulk, texte avertissement).
 
 ## 9) Risques / points d'attention
 
 - Secrets/config potentiellement en clair dans des fichiers PHP de prod.
 - Dump SQL contient des donnees reelles (a anonymiser pour environnements dev/partage).
-- Ne jamais committer `journal/config.local.php` ni le dump SQL complet avec donnees reelles.
+- **Purge messages expires**: verifier qu'un cron serveur supprime (ou archive) les lignes `messages` apres `expires_at` — non present dans le depot au scan actuel.
 - **Ecart schema / produit (suiveurs actifs)**: la table `author_follows` dans `sc3mwse0880_jm.sql` n'a pas de champ de **fin de validite** du suivi (`expires_at` ou lie a l'abonnement du follower). La regle "ne compter que les suiveurs avec du temps restant" demande une **evolution BDD + logique** (cron ou calcul a la volee). **Independamment**, les **credits** au sens GNTOMA actuel servent aux **messages** et aux **demandes d'acces journaux payants** (pas confondre avec cette regle de comptage des suiveurs tant que la source du "temps suiveur" n'est pas figee).
 
 ## 10) Prochaines actions recommandees

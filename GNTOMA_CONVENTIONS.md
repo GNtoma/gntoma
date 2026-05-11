@@ -208,12 +208,24 @@ Paiement (ex: Flexpay):
 - webhook/validation
 - verification automatique
 
+**Paiements traites en ligne sur GNTOMA** (flux existant): prolongation d'abonnement / temps d'acces plateforme, achat de packs de **credits messages**.
+
+**Journaux payants**: le **prix affiche** est en **USD**. Le reglement entre auteur et lecteur pour ouvrir le contenu se fait en pratique **par accord direct** (messagerie, Mobile Money, etc.), distinct du paiement FlexPay des credits / abonnement.
+
 ### Credits (consommation cote utilisateur)
 
-Les **credits** servent concretement a:
+Les **credits messages** servent a:
 
-- **l'envoi de messages** (solde `message_credits.remaining_credits`, decremente a l'envoi via `message_send_process.php`);
-- **l'envoi d'une demande d'acces** vers un journal **payant** (`paid`) via le compteur `users.access_request_credits`, decremente lors de la creation d'une ligne dans `access_requests` (`journal_access_request.php`).
+- **1 credit** par **message** envoye en conversation (`message_send_process.php`);
+- **50 credits** par **campagne d'envoi de masse** (un tarif fixe par campagne, independamment du nombre de destinataires filtres), via `message_bulk_process.php`.
+
+Les **credits demande d'acces** (`users.access_request_credits`) servent a:
+
+- **l'envoi d'une demande d'acces** vers un journal **payant** (`paid`), decremente lors de la creation d'une ligne dans `access_requests` (`journal_access_request.php`).
+
+### Duree de vie des messages
+
+- Les messages ont une date d'expiration **21 jours** apres envoi (`expires_at`). La suppression effective apres cette date doit etre assuree par une tache automatisee (cron) cote serveur si souhaitee.
 
 ## 12) Convention d'acces aux journaux verrouilles (feature centrale)
 

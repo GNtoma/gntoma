@@ -359,7 +359,7 @@ if ($request) {
                         </div>
                         <div>
                             <p class="text-sm font-bold text-amber-900 mb-1">Vérifiez avant d'approuver</p>
-                            <p class="text-xs text-amber-800">Avez-vous bien reçu le paiement convenu (Mobile Money, virement, espèces…) ? Une fois approuvée, le demandeur aura un accès permanent au journal.</p>
+                            <p class="text-xs text-amber-800">Sur GNTOMA, l'abonnement et les crédits messages se paient déjà en ligne (FlexPay). Pour l'accès à ce journal payant, le montant affiché en USD se règle en général entre vous et le lecteur (messagerie, Mobile Money, etc.) : vérifiez que vous êtes d'accord avant d'approuver. Une fois approuvée, le demandeur aura un accès permanent au contenu.</p>
                         </div>
                     </div>
                 </div>

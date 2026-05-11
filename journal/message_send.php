@@ -16,7 +16,7 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 $user_code = $_SESSION['user_id'];
-$BULK_COST = 100;
+$BULK_COST = 50;
 
 // Mode : 'single' (1 personne) ou 'bulk' (envoi en masse)
 $mode = ($_GET['mode'] ?? '') === 'bulk' ? 'bulk' : 'single';
@@ -361,7 +361,7 @@ $error = $_GET['error'] ?? null;
             </div>
             <div class="flex-1">
                 <p class="text-xs text-orange-600 font-bold uppercase tracking-wide">Coût fixe</p>
-                <p class="text-sm font-bold text-dark">100 crédits par envoi en masse</p>
+                <p class="text-sm font-bold text-dark">50 crédits par envoi en masse</p>
                 <p class="text-[10px] text-gray-500 mt-0.5">Quel que soit le nombre de destinataires correspondants</p>
             </div>
         </div>
@@ -471,7 +471,7 @@ $error = $_GET['error'] ?? null;
             <div class="bg-gray-50 rounded-2xl p-4 flex items-center justify-between mt-2">
                 <div>
                     <p class="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Coût total</p>
-                    <p class="text-base sm:text-lg font-black text-orange-600">100 crédits</p>
+                    <p class="text-base sm:text-lg font-black text-orange-600">50 crédits</p>
                 </div>
                 <?php if ($has_enough_bulk): ?>
                 <button type="submit" class="bg-orange-500 text-white font-bold py-2.5 sm:py-3 px-5 sm:px-7 rounded-xl hover:bg-orange-600 transition-all flex items-center space-x-2 text-sm shadow-md shadow-orange-500/30">

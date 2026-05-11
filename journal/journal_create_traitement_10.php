@@ -135,7 +135,7 @@ try {
             INSERT INTO journals (user_code, title, status, cover_image, keywords, price, price_currency, expires_at) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ");
-        $currency = 'CDF'; // Francs congolais par défaut
+        $currency = 'USD'; // Prix journal affiché en dollars US
         $insert_stmt->execute([$user_code, $title, $status, $cover_image, $keywords, $price, $currency, $expires_at]);
     } catch (PDOException $e) {
         // Fallback si la colonne expires_at n'existe pas encore (migration 012 pas exécutée)
@@ -144,7 +144,7 @@ try {
                 INSERT INTO journals (user_code, title, status, cover_image, keywords, price, price_currency) 
                 VALUES (?, ?, ?, ?, ?, ?, ?)
             ");
-            $currency = 'CDF';
+            $currency = 'USD';
             $insert_stmt->execute([$user_code, $title, $status, $cover_image, $keywords, $price, $currency]);
         } else {
             throw $e; // Relancer si c'est une autre erreur
