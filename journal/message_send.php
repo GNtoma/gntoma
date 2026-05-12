@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 session_start();
 require_once 'config.php';
+require_once __DIR__ . '/i18n.php';
+gntoma_init_locale_from_request();
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../index.php");
@@ -59,7 +61,10 @@ if (!empty($to_code)) {
 }
 
 if ($is_access_request_context && !empty($recipient)) {
-    $request_context_note = 'Discussion liée à la demande D' . $request_id . ' (journal #' . $journal_id . ').';
+    $request_context_note = __('message_send.context_note', [
+        'request' => (string) $request_id,
+        'journal_id' => (string) $journal_id,
+    ]);
 }
 
 // === MODE SINGLE === Recherche d'utilisateurs
@@ -84,11 +89,11 @@ if ($mode === 'single' && !empty($search_term) && strlen($search_term) >= 2) {
 $error = $_GET['error'] ?? null;
 ?>
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="<?= htmlspecialchars(gntoma_html_lang(), ENT_QUOTES, 'UTF-8') ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nouveau Message - GNTOMA</title>
+    <title><?= htmlspecialchars(__('message_send.page_title'), ENT_QUOTES, 'UTF-8') ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -152,14 +157,14 @@ $error = $_GET['error'] ?? null;
     
     <!-- Header -->
     <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-3 sm:px-4 py-3 sm:py-4">
-        <div class="max-w-2xl mx-auto flex items-center justify-between">
-            <a href="messages_list.php" class="w-9 h-9 sm:w-10 sm:h-10 bg-gray-100 rounded-xl flex items-center justify-center hover:bg-gray-200 transition-all">
+        <div class="max-w-2xl mx-auto flex items-center justify-between gap-2">
+            <a href="messages_list.php" class="w-9 h-9 sm:w-10 sm:h-10 bg-gray-100 rounded-xl flex items-center justify-center hover:bg-gray-200 transition-all flex-shrink-0">
                 <svg class="h-4 w-4 sm:h-5 sm:w-5 text-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
                 </svg>
             </a>
-            <h1 class="text-base sm:text-lg font-bold text-dark">Nouveau Message</h1>
-            <div class="w-9 sm:w-10"></div>
+            <h1 class="text-base sm:text-lg font-bold text-dark flex-1 text-center"><?= htmlspecialchars(__('message_send.heading'), ENT_QUOTES, 'UTF-8') ?></h1>
+            <div class="flex-shrink-0"><?= gntoma_lang_switch_markup() ?></div>
         </div>
     </header>
 
@@ -174,21 +179,21 @@ $error = $_GET['error'] ?? null;
                     </svg>
                 </div>
                 <div>
-                    <p class="text-[10px] sm:text-xs text-gray-500 font-bold uppercase tracking-wide">Crédits disponibles</p>
+                    <p class="text-[10px] sm:text-xs text-gray-500 font-bold uppercase tracking-wide"><?= htmlspecialchars(__('message_send.credits_available'), ENT_QUOTES, 'UTF-8') ?></p>
                     <p class="text-lg sm:text-xl font-black text-dark"><?= number_format($remaining) ?></p>
                 </div>
             </div>
-            <a href="messages_buy.php" class="text-xs sm:text-sm text-primary font-bold hover:underline">+ Recharger</a>
+            <a href="messages_buy.php" class="text-xs sm:text-sm text-primary font-bold hover:underline"><?= htmlspecialchars(__('message_send.recharge_link'), ENT_QUOTES, 'UTF-8') ?></a>
         </div>
 
         <?php if ($error === 'blocked'): ?>
         <div class="bg-red-50 border border-red-200 rounded-2xl p-4">
-            <p class="text-sm font-bold text-red-700 text-center">Cet utilisateur vous a bloqué</p>
+            <p class="text-sm font-bold text-red-700 text-center"><?= htmlspecialchars(__('message_send.blocked'), ENT_QUOTES, 'UTF-8') ?></p>
         </div>
         <?php endif; ?>
         <?php if ($error === 'no_recipients'): ?>
         <div class="bg-yellow-50 border border-yellow-200 rounded-2xl p-4">
-            <p class="text-sm font-bold text-yellow-700 text-center">Aucun utilisateur ne correspond à vos critères</p>
+            <p class="text-sm font-bold text-yellow-700 text-center"><?= htmlspecialchars(__('message_send.no_recipients'), ENT_QUOTES, 'UTF-8') ?></p>
         </div>
         <?php endif; ?>
 
@@ -199,13 +204,13 @@ $error = $_GET['error'] ?? null;
                 <svg class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                 </svg>
-                <span>À une personne</span>
+                <span><?= htmlspecialchars(__('message_send.tab_single'), ENT_QUOTES, 'UTF-8') ?></span>
             </a>
             <a href="?mode=bulk" class="mode-tab <?= $mode === 'bulk' ? 'active' : 'inactive' ?> py-2.5 sm:py-3 px-3 rounded-xl sm:rounded-2xl text-center font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-1.5 sm:gap-2">
                 <svg class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
-                <span>En masse</span>
+                <span><?= htmlspecialchars(__('message_send.tab_bulk'), ENT_QUOTES, 'UTF-8') ?></span>
             </a>
         </div>
         <?php endif; ?>
@@ -215,7 +220,7 @@ $error = $_GET['error'] ?? null;
         <?php if (!$recipient): ?>
         <!-- Recherche de destinataire -->
         <div class="glass-panel rounded-2xl sm:rounded-[2rem] p-4 sm:p-5">
-            <h2 class="text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Choisir le destinataire</h2>
+            <h2 class="text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-widest mb-4"><?= htmlspecialchars(__('message_send.choose_recipient'), ENT_QUOTES, 'UTF-8') ?></h2>
             
             <form method="GET" class="relative mb-4">
                 <input type="hidden" name="mode" value="single">
@@ -226,7 +231,7 @@ $error = $_GET['error'] ?? null;
                 </div>
                 <input type="text" name="search" 
                        value="<?= htmlspecialchars($search_term) ?>"
-                       placeholder="Nom, code (A3) ou ville..." 
+                       placeholder="<?= htmlspecialchars(__('message_send.search_placeholder'), ENT_QUOTES, 'UTF-8') ?>" 
                        autofocus
                        class="w-full bg-gray-50 border border-gray-200 rounded-xl pl-10 sm:pl-12 pr-4 py-2.5 sm:py-3 text-sm focus:ring-2 focus:ring-primary outline-none">
             </form>
@@ -253,7 +258,7 @@ $error = $_GET['error'] ?? null;
                 <?php endforeach; ?>
             </div>
             <?php elseif (!empty($search_term)): ?>
-            <p class="text-center text-gray-400 text-sm py-6">Aucun utilisateur trouvé pour "<?= htmlspecialchars($search_term) ?>"</p>
+            <p class="text-center text-gray-400 text-sm py-6"><?= htmlspecialchars(__('message_send.no_results', ['term' => $search_term]), ENT_QUOTES, 'UTF-8') ?></p>
             <?php else: ?>
             <div class="text-center py-6">
                 <div class="w-14 h-14 sm:w-16 sm:h-16 bg-blue-50 rounded-2xl flex items-center justify-center mx-auto mb-3">
@@ -261,7 +266,7 @@ $error = $_GET['error'] ?? null;
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                     </svg>
                 </div>
-                <p class="text-gray-400 text-xs sm:text-sm">Tapez un nom, code ou ville pour rechercher</p>
+                <p class="text-gray-400 text-xs sm:text-sm"><?= htmlspecialchars(__('message_send.search_hint'), ENT_QUOTES, 'UTF-8') ?></p>
             </div>
             <?php endif; ?>
         </div>
@@ -273,16 +278,16 @@ $error = $_GET['error'] ?? null;
                 <?php $profile_pic = !empty($recipient['profile_pic']) ? '../' . $recipient['profile_pic'] : '../images/user_default.png'; ?>
                 <img src="<?= htmlspecialchars($profile_pic) ?>" alt="" class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl object-cover border border-gray-100">
                 <div class="flex-1 min-w-0">
-                    <p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Destinataire</p>
+                    <p class="text-[10px] uppercase font-bold text-gray-400 tracking-wider"><?= htmlspecialchars(__('message_send.recipient'), ENT_QUOTES, 'UTF-8') ?></p>
                     <p class="font-bold text-dark text-sm sm:text-base truncate"><?= htmlspecialchars($recipient['first_name'] . ' ' . $recipient['last_name']) ?></p>
-                    <p class="text-[10px] sm:text-xs text-gray-500"><?= $recipient['user_code'] ?><?php if ($recipient['city']): ?> • <?= htmlspecialchars($recipient['city']) ?><?php endif; ?></p>
+                    <p class="text-[10px] sm:text-xs text-gray-500"><?= htmlspecialchars((string) $recipient['user_code'], ENT_QUOTES, 'UTF-8') ?><?php if ($recipient['city']): ?> • <?= htmlspecialchars($recipient['city']) ?><?php endif; ?></p>
                 </div>
-                <a href="message_send.php?mode=single" class="text-xs text-primary font-bold hover:underline flex-shrink-0">Changer</a>
+                <a href="message_send.php?mode=single" class="text-xs text-primary font-bold hover:underline flex-shrink-0"><?= htmlspecialchars(__('message_send.change'), ENT_QUOTES, 'UTF-8') ?></a>
             </div>
 
             <?php if ($request_context_note !== ''): ?>
             <div class="bg-orange-50 border border-orange-200 rounded-xl p-3 mb-4">
-                <p class="text-[11px] font-bold text-orange-700"><?= htmlspecialchars($request_context_note) ?></p>
+                <p class="text-[11px] font-bold text-orange-700"><?= htmlspecialchars($request_context_note, ENT_QUOTES, 'UTF-8') ?></p>
             </div>
             <?php endif; ?>
 
@@ -293,41 +298,41 @@ $error = $_GET['error'] ?? null;
                 <input type="hidden" name="journal_id" value="<?= (int)$journal_id ?>">
                 
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Votre message</label>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('message_send.your_message'), ENT_QUOTES, 'UTF-8') ?></label>
                     <textarea name="content" rows="5" 
-                              placeholder="<?= $request_context_note !== '' ? 'Ex: Bonjour, concernant la demande D' . $request_id . ', voici ma proposition...' : 'Écrivez votre message...' ?>"
+                              placeholder="<?= htmlspecialchars($request_context_note !== '' ? __('message_send.placeholder_context', ['request' => (string) $request_id]) : __('message_send.placeholder_default'), ENT_QUOTES, 'UTF-8') ?>"
                               class="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary outline-none resize-none"
                               required></textarea>
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Mots-clés (optionnel)</label>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('message_send.keywords_optional'), ENT_QUOTES, 'UTF-8') ?></label>
                     <input type="text" name="keywords" 
-                           placeholder="Ex: travail, opportunité, amitié" 
+                           placeholder="<?= htmlspecialchars(__('message_send.keywords_placeholder'), ENT_QUOTES, 'UTF-8') ?>" 
                            class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none">
                 </div>
 
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Image (optionnel)</label>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('message_send.image_optional'), ENT_QUOTES, 'UTF-8') ?></label>
                     <input type="file" name="attachment" accept="image/*" 
                            class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-primary/10 file:text-primary hover:file:bg-primary/20">
                 </div>
 
                 <div class="bg-gray-50 rounded-2xl p-4 flex items-center justify-between mt-2">
                     <div>
-                        <p class="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Coût</p>
-                        <p class="text-base sm:text-lg font-black text-primary">1 crédit</p>
+                        <p class="text-[10px] text-gray-400 uppercase tracking-wider font-bold"><?= htmlspecialchars(__('message_send.cost'), ENT_QUOTES, 'UTF-8') ?></p>
+                        <p class="text-base sm:text-lg font-black text-primary"><?= htmlspecialchars(__('message_send.one_credit'), ENT_QUOTES, 'UTF-8') ?></p>
                     </div>
                     <?php if ($has_enough_single): ?>
                     <button type="submit" class="bg-primary text-white font-bold py-2.5 sm:py-3 px-5 sm:px-7 rounded-xl hover:bg-blue-600 transition-all flex items-center space-x-2 text-sm shadow-md shadow-blue-500/30">
                         <svg class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                         </svg>
-                        <span>Envoyer</span>
+                        <span><?= htmlspecialchars(__('message_send.send'), ENT_QUOTES, 'UTF-8') ?></span>
                     </button>
                     <?php else: ?>
                     <a href="messages_buy.php" class="bg-gray-300 text-gray-600 font-bold py-2.5 sm:py-3 px-5 sm:px-7 rounded-xl text-sm">
-                        Acheter crédits
+                        <?= htmlspecialchars(__('message_send.buy_credits'), ENT_QUOTES, 'UTF-8') ?>
                     </a>
                     <?php endif; ?>
                 </div>
@@ -346,8 +351,8 @@ $error = $_GET['error'] ?? null;
                 </svg>
             </div>
             <div class="flex-1">
-                <p class="text-sm font-bold text-red-800">Crédits insuffisants</p>
-                <p class="text-xs text-red-700 mt-1">Vous avez <?= number_format($remaining) ?> crédits, il en faut <?= $BULK_COST ?>. <a href="messages_buy.php" class="font-bold underline">Acheter →</a></p>
+                <p class="text-sm font-bold text-red-800"><?= htmlspecialchars(__('message_send.bulk_insufficient_title'), ENT_QUOTES, 'UTF-8') ?></p>
+                <p class="text-xs text-red-700 mt-1"><?= __('message_send.bulk_insufficient_body', ['have' => (string) number_format($remaining), 'need' => (string) $BULK_COST]) ?></p>
             </div>
         </div>
         <?php endif; ?>
@@ -360,9 +365,9 @@ $error = $_GET['error'] ?? null;
                 </svg>
             </div>
             <div class="flex-1">
-                <p class="text-xs text-orange-600 font-bold uppercase tracking-wide">Coût fixe</p>
-                <p class="text-sm font-bold text-dark">50 crédits par envoi en masse</p>
-                <p class="text-[10px] text-gray-500 mt-0.5">Quel que soit le nombre de destinataires correspondants</p>
+                <p class="text-xs text-orange-600 font-bold uppercase tracking-wide"><?= htmlspecialchars(__('message_send.bulk_cost_title'), ENT_QUOTES, 'UTF-8') ?></p>
+                <p class="text-sm font-bold text-dark"><?= htmlspecialchars(__('message_send.bulk_cost_line'), ENT_QUOTES, 'UTF-8') ?></p>
+                <p class="text-[10px] text-gray-500 mt-0.5"><?= htmlspecialchars(__('message_send.bulk_cost_hint'), ENT_QUOTES, 'UTF-8') ?></p>
             </div>
         </div>
 
@@ -370,33 +375,33 @@ $error = $_GET['error'] ?? null;
             
             <!-- Filtres de destinataires -->
             <div>
-                <h2 class="text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Filtres de destinataires</h2>
+                <h2 class="text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-widest mb-4"><?= htmlspecialchars(__('message_send.filters_title'), ENT_QUOTES, 'UTF-8') ?></h2>
                 
                 <div class="space-y-4">
                     <!-- Sexe -->
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Sexe</label>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('message_send.gender'), ENT_QUOTES, 'UTF-8') ?></label>
                         <div class="grid grid-cols-3 gap-2">
                             <label class="flex items-center justify-center gap-1.5 p-2.5 sm:p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-all border-2 border-transparent has-[:checked]:border-primary has-[:checked]:bg-primary/5">
                                 <input type="radio" name="filter_gender" value="all" checked class="sr-only">
-                                <span class="text-xs sm:text-sm font-bold text-dark">Tous</span>
+                                <span class="text-xs sm:text-sm font-bold text-dark"><?= htmlspecialchars(__('message_send.gender_all'), ENT_QUOTES, 'UTF-8') ?></span>
                             </label>
                             <label class="flex items-center justify-center gap-1.5 p-2.5 sm:p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-all border-2 border-transparent has-[:checked]:border-pink-500 has-[:checked]:bg-pink-50">
                                 <input type="radio" name="filter_gender" value="female" class="sr-only">
-                                <span class="text-xs sm:text-sm font-bold text-dark">♀ Femmes</span>
+                                <span class="text-xs sm:text-sm font-bold text-dark"><?= htmlspecialchars(__('message_send.gender_female'), ENT_QUOTES, 'UTF-8') ?></span>
                             </label>
                             <label class="flex items-center justify-center gap-1.5 p-2.5 sm:p-3 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-all border-2 border-transparent has-[:checked]:border-blue-500 has-[:checked]:bg-blue-50">
                                 <input type="radio" name="filter_gender" value="male" class="sr-only">
-                                <span class="text-xs sm:text-sm font-bold text-dark">♂ Hommes</span>
+                                <span class="text-xs sm:text-sm font-bold text-dark"><?= htmlspecialchars(__('message_send.gender_male'), ENT_QUOTES, 'UTF-8') ?></span>
                             </label>
                         </div>
                     </div>
 
                     <!-- Ville -->
                     <div class="relative">
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Ville (optionnel)</label>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('message_send.city_optional'), ENT_QUOTES, 'UTF-8') ?></label>
                         <input type="text" name="filter_city" id="filter-city-input"
-                               placeholder="Ex: Paris, Kinshasa, Londres..."
+                               placeholder="<?= htmlspecialchars(__('message_send.city_placeholder'), ENT_QUOTES, 'UTF-8') ?>"
                                hx-get="geo_autocomplete.php?type=city"
                                hx-trigger="keyup changed delay:300ms"
                                hx-target="#filter-city-suggestions"
@@ -406,9 +411,9 @@ $error = $_GET['error'] ?? null;
 
                     <!-- Commune -->
                     <div class="relative">
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Commune / Quartier (optionnel)</label>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('message_send.commune_optional'), ENT_QUOTES, 'UTF-8') ?></label>
                         <input type="text" name="filter_commune" id="filter-commune-input"
-                               placeholder="Ex: Le Marais, Gombe..."
+                               placeholder="<?= htmlspecialchars(__('message_send.commune_placeholder'), ENT_QUOTES, 'UTF-8') ?>"
                                hx-get="geo_autocomplete.php?type=commune"
                                hx-trigger="keyup changed delay:300ms"
                                hx-target="#filter-commune-suggestions"
@@ -418,18 +423,18 @@ $error = $_GET['error'] ?? null;
 
                     <!-- Tranche d'âge -->
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Tranche d'âge (optionnel)</label>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('message_send.age_range'), ENT_QUOTES, 'UTF-8') ?></label>
                         <div class="grid grid-cols-2 gap-2">
                             <select name="filter_age_min" class="bg-gray-50 border border-gray-200 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:ring-2 focus:ring-primary outline-none">
-                                <option value="">Âge min</option>
+                                <option value=""><?= htmlspecialchars(__('message_send.age_min'), ENT_QUOTES, 'UTF-8') ?></option>
                                 <?php for ($i = 18; $i <= 70; $i += 5): ?>
-                                <option value="<?= $i ?>"><?= $i ?> ans</option>
+                                <option value="<?= $i ?>"><?= htmlspecialchars(__('message_send.age_years', ['n' => $i]), ENT_QUOTES, 'UTF-8') ?></option>
                                 <?php endfor; ?>
                             </select>
                             <select name="filter_age_max" class="bg-gray-50 border border-gray-200 rounded-xl px-3 sm:px-4 py-2.5 sm:py-3 text-sm focus:ring-2 focus:ring-primary outline-none">
-                                <option value="">Âge max</option>
+                                <option value=""><?= htmlspecialchars(__('message_send.age_max'), ENT_QUOTES, 'UTF-8') ?></option>
                                 <?php for ($i = 25; $i <= 80; $i += 5): ?>
-                                <option value="<?= $i ?>"><?= $i ?> ans</option>
+                                <option value="<?= $i ?>"><?= htmlspecialchars(__('message_send.age_years', ['n' => $i]), ENT_QUOTES, 'UTF-8') ?></option>
                                 <?php endfor; ?>
                             </select>
                         </div>
@@ -441,26 +446,26 @@ $error = $_GET['error'] ?? null;
 
             <!-- Contenu du message -->
             <div>
-                <h2 class="text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Votre message</h2>
+                <h2 class="text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-widest mb-4"><?= htmlspecialchars(__('message_send.your_message_bulk_section'), ENT_QUOTES, 'UTF-8') ?></h2>
                 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Contenu</label>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('message_send.content_label'), ENT_QUOTES, 'UTF-8') ?></label>
                         <textarea name="content" rows="5" 
-                                  placeholder="Écrivez votre message à diffuser..." 
+                                  placeholder="<?= htmlspecialchars(__('message_send.bulk_placeholder'), ENT_QUOTES, 'UTF-8') ?>" 
                                   class="w-full bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary outline-none resize-none"
                                   required></textarea>
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Mots-clés (pour filtrage)</label>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('message_send.keywords_filter'), ENT_QUOTES, 'UTF-8') ?></label>
                         <input type="text" name="keywords" 
-                               placeholder="Ex: opportunité, collaboration, networking"
+                               placeholder="<?= htmlspecialchars(__('message_send.bulk_keywords_placeholder'), ENT_QUOTES, 'UTF-8') ?>"
                                class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 sm:py-3 text-sm focus:ring-2 focus:ring-primary outline-none">
                     </div>
 
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Image (optionnel)</label>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('message_send.image_optional'), ENT_QUOTES, 'UTF-8') ?></label>
                         <input type="file" name="attachment" accept="image/*" 
                                class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 sm:py-3 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-bold file:bg-primary/10 file:text-primary hover:file:bg-primary/20">
                     </div>
@@ -470,19 +475,19 @@ $error = $_GET['error'] ?? null;
             <!-- Coût et envoi -->
             <div class="bg-gray-50 rounded-2xl p-4 flex items-center justify-between mt-2">
                 <div>
-                    <p class="text-[10px] text-gray-400 uppercase tracking-wider font-bold">Coût total</p>
-                    <p class="text-base sm:text-lg font-black text-orange-600">50 crédits</p>
+                    <p class="text-[10px] text-gray-400 uppercase tracking-wider font-bold"><?= htmlspecialchars(__('message_send.total_cost'), ENT_QUOTES, 'UTF-8') ?></p>
+                    <p class="text-base sm:text-lg font-black text-orange-600"><?= htmlspecialchars(__('message_send.fifty_credits'), ENT_QUOTES, 'UTF-8') ?></p>
                 </div>
                 <?php if ($has_enough_bulk): ?>
                 <button type="submit" class="bg-orange-500 text-white font-bold py-2.5 sm:py-3 px-5 sm:px-7 rounded-xl hover:bg-orange-600 transition-all flex items-center space-x-2 text-sm shadow-md shadow-orange-500/30">
                     <svg class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                     </svg>
-                    <span>Envoyer en masse</span>
+                    <span><?= htmlspecialchars(__('message_send.send_bulk'), ENT_QUOTES, 'UTF-8') ?></span>
                 </button>
                 <?php else: ?>
                 <a href="messages_buy.php" class="bg-gray-300 text-gray-600 font-bold py-2.5 sm:py-3 px-5 sm:px-7 rounded-xl text-sm">
-                    Acheter crédits
+                    <?= htmlspecialchars(__('message_send.buy_credits'), ENT_QUOTES, 'UTF-8') ?>
                 </a>
                 <?php endif; ?>
             </div>

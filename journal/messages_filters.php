@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 session_start();
 require_once 'config.php';
+require_once __DIR__ . '/i18n.php';
+gntoma_init_locale_from_request();
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../index.php");
@@ -92,14 +94,13 @@ try {
     $remaining = 0;
 }
 
-$mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 ?>
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="<?= htmlspecialchars(gntoma_html_lang(), ENT_QUOTES, 'UTF-8') ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Filtres Messages - GNTOMA</title>
+    <title><?= htmlspecialchars(__('messages_filters.page_title'), ENT_QUOTES, 'UTF-8') ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
@@ -121,14 +122,14 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
     
     <!-- Header -->
     <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-4 py-4">
-        <div class="max-w-2xl mx-auto flex items-center justify-between">
+        <div class="max-w-2xl mx-auto flex items-center justify-between gap-2">
             <a href="messages_list.php" class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center hover:bg-gray-200 transition-all">
                 <svg class="h-5 w-5 text-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
                 </svg>
             </a>
-            <h1 class="text-lg font-bold text-dark">Filtres Messages</h1>
-            <div class="w-10"></div>
+            <h1 class="text-lg font-bold text-dark flex-1 text-center"><?= htmlspecialchars(__('messages_filters.heading'), ENT_QUOTES, 'UTF-8') ?></h1>
+            <div class="flex-shrink-0"><?= gntoma_lang_switch_markup() ?></div>
         </div>
     </header>
 
@@ -136,31 +137,31 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
         
         <!-- Crédits -->
         <div class="glass-panel rounded-[2rem] p-4 flex items-center justify-between">
-            <p class="text-xs text-gray-500 font-bold uppercase">Crédits disponibles</p>
+            <p class="text-xs text-gray-500 font-bold uppercase"><?= htmlspecialchars(__('messages_filters.credits'), ENT_QUOTES, 'UTF-8') ?></p>
             <p class="text-xl font-black text-dark"><?= number_format($remaining) ?></p>
         </div>
 
         <!-- Type de filtre -->
         <div class="glass-panel rounded-[2rem] p-5">
-            <h2 class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Type de filtre</h2>
+            <h2 class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4"><?= htmlspecialchars(__('messages_filters.filter_type'), ENT_QUOTES, 'UTF-8') ?></h2>
             <div class="space-y-2">
                 <a href="?filter=all" class="flex items-center space-x-3 p-3 rounded-xl <?= $filter_type === 'all' ? 'bg-primary/10 border-2 border-primary' : 'hover:bg-gray-50 border border-transparent' ?> transition-all">
                     <svg class="h-5 w-5 <?= $filter_type === 'all' ? 'text-primary' : 'text-gray-400' ?>" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                     </svg>
-                    <span class="font-bold <?= $filter_type === 'all' ? 'text-primary' : 'text-dark' ?> text-sm">Tous les messages</span>
+                    <span class="font-bold <?= $filter_type === 'all' ? 'text-primary' : 'text-dark' ?> text-sm"><?= htmlspecialchars(__('messages_filters.all_messages'), ENT_QUOTES, 'UTF-8') ?></span>
                 </a>
                 <a href="?filter=unread" class="flex items-center space-x-3 p-3 rounded-xl <?= $filter_type === 'unread' ? 'bg-primary/10 border-2 border-primary' : 'hover:bg-gray-50 border border-transparent' ?> transition-all">
                     <svg class="h-5 w-5 <?= $filter_type === 'unread' ? 'text-primary' : 'text-gray-400' ?>" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
                     </svg>
-                    <span class="font-bold <?= $filter_type === 'unread' ? 'text-primary' : 'text-dark' ?> text-sm">Non lus</span>
+                    <span class="font-bold <?= $filter_type === 'unread' ? 'text-primary' : 'text-dark' ?> text-sm"><?= htmlspecialchars(__('messages_filters.unread'), ENT_QUOTES, 'UTF-8') ?></span>
                 </a>
                 <a href="?filter=with_images" class="flex items-center space-x-3 p-3 rounded-xl <?= $filter_type === 'with_images' ? 'bg-primary/10 border-2 border-primary' : 'hover:bg-gray-50 border border-transparent' ?> transition-all">
                     <svg class="h-5 w-5 <?= $filter_type === 'with_images' ? 'text-primary' : 'text-gray-400' ?>" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    <span class="font-bold <?= $filter_type === 'with_images' ? 'text-primary' : 'text-dark' ?> text-sm">Avec images</span>
+                    <span class="font-bold <?= $filter_type === 'with_images' ? 'text-primary' : 'text-dark' ?> text-sm"><?= htmlspecialchars(__('messages_filters.with_images'), ENT_QUOTES, 'UTF-8') ?></span>
                 </a>
             </div>
         </div>
@@ -168,11 +169,11 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
         <!-- Filtre par mot-clé -->
         <?php if (!empty($all_keywords)): ?>
         <div class="glass-panel rounded-[2rem] p-5">
-            <h2 class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Par mot-clé</h2>
+            <h2 class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4"><?= htmlspecialchars(__('messages_filters.by_keyword'), ENT_QUOTES, 'UTF-8') ?></h2>
             <form method="GET" class="mb-4">
                 <input type="text" name="keyword" 
                        value="<?= htmlspecialchars($keyword_filter) ?>"
-                       placeholder="Rechercher un mot-clé..." 
+                       placeholder="<?= htmlspecialchars(__('messages_filters.keyword_placeholder'), ENT_QUOTES, 'UTF-8') ?>" 
                        class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none">
                 <input type="hidden" name="filter" value="keyword">
             </form>
@@ -190,7 +191,10 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
         <!-- Résultats -->
         <div class="glass-panel rounded-[2rem] p-4">
             <h2 class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4 px-2">
-                <?= count($messages) ?> message<?= count($messages) > 1 ? 's' : '' ?>
+                <?php
+                $mc = count($messages);
+                echo htmlspecialchars($mc === 1 ? __('messages_filters.results_count_one', ['n' => (string) $mc]) : __('messages_filters.results_count_many', ['n' => (string) $mc]), ENT_QUOTES, 'UTF-8');
+                ?>
             </h2>
             
             <?php if (empty($messages)): ?>
@@ -200,14 +204,14 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                     </svg>
                 </div>
-                <p class="text-gray-500 font-medium">Aucun message</p>
+                <p class="text-gray-500 font-medium"><?= htmlspecialchars(__('messages_filters.empty'), ENT_QUOTES, 'UTF-8') ?></p>
             </div>
             <?php else: ?>
             <div class="space-y-3">
                 <?php foreach ($messages as $msg): 
                     $date_obj = new DateTime($msg['created_at']);
                     $jour = $date_obj->format('d');
-                    $mois = $mois_fr[(int)$date_obj->format('m') - 1];
+                    $mois = __('months.' . (string) (int) $date_obj->format('m'));
                     $date_formatee = "$jour $mois";
                     $heure = $date_obj->format('H:i');
                     
@@ -236,7 +240,7 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
                             <svg class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
-                            Image
+                            <?= htmlspecialchars(__('messages_filters.attachment_image'), ENT_QUOTES, 'UTF-8') ?>
                         </div>
                         <?php endif; ?>
                     </div>

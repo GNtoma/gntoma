@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 session_start();
 require_once 'config.php';
+require_once __DIR__ . '/i18n.php';
+gntoma_init_locale_from_request();
 
 // Vérification de session
 if (!isset($_SESSION['user_id'])) {
@@ -65,7 +67,7 @@ if ($journal_id > 0) {
         }
     } catch (PDOException $e) {
         error_log("Erreur récupération journal : " . $e->getMessage());
-        $error = "Erreur lors de la récupération des informations du journal.";
+        $error = __('access_request.err_load_journal');
     }
 }
 
@@ -204,14 +206,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $journal && $is_paid_journal && !is
 
         // Vérifier les crédits de demandes
         if ($user_credits <= 0) {
-            $error = "Vous n'avez plus de crédits de demandes. Prolongez votre abonnement pour obtenir plus de crédits.";
+            $error = __('access_request.err_no_credits');
             $pdo->rollBack();
         } else {
 
             $reader_stmt = $pdo->prepare("SELECT id FROM journal_readers WHERE journal_id = ? AND user_code = ? LIMIT 1");
             $reader_stmt->execute([$journal_id, $requester_code]);
             if ($reader_stmt->fetch()) {
-                $error = "Vous avez déjà accès à ce journal.";
+                $error = __('access_request.err_already_access');
                 $pdo->rollBack();
             } else {
         
@@ -223,7 +225,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $journal && $is_paid_journal && !is
                 ");
                 $check_stmt->execute([$journal_id, $requester_code]);
                 if ($check_stmt->fetch()) {
-                    $error = "Vous avez déjà une demande en attente pour ce journal.";
+                    $error = __('access_request.err_pending_exists');
                     $pdo->rollBack();
                 } else {
                 // Générer le prochain numéro de demande pour ce journal
@@ -281,7 +283,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $journal && $is_paid_journal && !is
                 // Message inbox auteur : lier au fil SYSTEM ↔ auteur (sinon is_read reste bloqué et le badge ment).
                 try {
                     $author_code = (string) $journal['user_code'];
-                    $notif_content = "Nouvelle demande d'accès au journal {$journal_code} ({$request_number}). Connectez-vous pour l'approuver ou la refuser.";
+                    $notif_content = __('access_request.notif_system_author', [
+                        'journal_code' => $journal_code,
+                        'request_number' => $request_number,
+                    ]);
                     $preview = substr($notif_content, 0, 100);
 
                     $threadSel = $pdo->prepare("
@@ -316,9 +321,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $journal && $is_paid_journal && !is
 
                 $pdo->commit();
 
-                $success = "Votre demande d'accès a été envoyée ! L'auteur a été notifié automatiquement.<br>
-                          Il pourra approuver votre demande depuis son tableau de bord.<br>
-                          Votre numéro de suivi : <strong>{$request_number}</strong>";
+                $success = __('access_request.success_sent_html', ['request_number' => $request_number]);
             }
             }
         }
@@ -332,9 +335,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $journal && $is_paid_journal && !is
             strpos($e->getMessage(), 'access_request_counters') !== false ||
             strpos($e->getMessage(), "doesn't exist") !== false ||
             strpos($e->getMessage(), 'Unknown table') !== false) {
-            $error = "Le système de demandes d'accès n'est pas encore activé. Veuillez contacter l'administrateur.";
+            $error = __('access_request.err_system_disabled');
         } else {
-            $error = "Erreur lors de l'envoi de la demande. Veuillez réessayer.";
+            $error = __('access_request.err_send_failed');
         }
     }
 }
@@ -345,11 +348,11 @@ if (!$journal) {
 }
 ?>
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="<?= htmlspecialchars(gntoma_html_lang(), ENT_QUOTES, 'UTF-8') ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GNTOMA - Demande d'Accès</title>
+    <title><?= htmlspecialchars(__('access_request.page_title'), ENT_QUOTES, 'UTF-8') ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script>
@@ -393,14 +396,15 @@ if (!$journal) {
 <body class="min-h-screen py-4 px-3 sm:py-8 sm:px-4">
 
     <div class="max-w-lg mx-auto">
-        <div class="mb-3">
+        <div class="mb-3 flex items-center justify-between gap-2">
             <button type="button" onclick="if (history.length > 1) { history.back(); } else { window.location.href='dashboard_6.php'; }"
                     class="inline-flex items-center gap-2 bg-white/80 border border-white text-gray-700 font-bold py-2 px-4 rounded-2xl hover:bg-white transition-all text-xs shadow-sm">
                 <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
                 </svg>
-                <span>Retour</span>
+                <span><?= htmlspecialchars(__('access_request.back'), ENT_QUOTES, 'UTF-8') ?></span>
             </button>
+            <div class="flex-shrink-0"><?= gntoma_lang_switch_markup() ?></div>
         </div>
 
         <div class="glass-panel rounded-[2rem] sm:rounded-[2.5rem] p-5 sm:p-8">
@@ -411,8 +415,8 @@ if (!$journal) {
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
                 </div>
-                <h1 class="text-2xl font-black text-dark mb-2">Demande d'Accès</h1>
-                <p class="text-gray-500 text-sm">Ce journal est payant. Envoyez une demande à l'auteur.</p>
+                <h1 class="text-2xl font-black text-dark mb-2"><?= htmlspecialchars(__('access_request.heading'), ENT_QUOTES, 'UTF-8') ?></h1>
+                <p class="text-gray-500 text-sm"><?= htmlspecialchars(__('access_request.sub_paid'), ENT_QUOTES, 'UTF-8') ?></p>
             </div>
 
             <?php if ($error): ?>
@@ -424,10 +428,10 @@ if (!$journal) {
             <?php if ($follow_success): ?>
                 <div class="bg-purple-50 text-purple-700 p-6 rounded-2xl mb-6 text-center">
                     <div class="text-4xl font-black text-purple-600 mb-2">✓</div>
-                    <p class="font-bold mb-2">Demande de suivi envoyée !</p>
-                    <p class="text-sm">Votre demande de suivi a été envoyée à l'auteur.<br>Votre numéro de demande est : <strong><?= htmlspecialchars($follow_success) ?></strong></p>
+                    <p class="font-bold mb-2"><?= htmlspecialchars(__('access_request.follow_sent_title'), ENT_QUOTES, 'UTF-8') ?></p>
+                    <p class="text-sm"><?= __('access_request.follow_sent_body', ['number' => htmlspecialchars((string) $follow_success, ENT_QUOTES, 'UTF-8')]) ?></p>
                     <div class="mt-4 p-4 bg-white rounded-xl border-2 border-purple-200">
-                        <p class="text-xs text-gray-500 uppercase tracking-widest font-bold mb-1">Numéro de demande</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-widest font-bold mb-1"><?= htmlspecialchars(__('access_request.request_number_label'), ENT_QUOTES, 'UTF-8') ?></p>
                         <p class="text-2xl font-black text-purple-600"><?= htmlspecialchars($follow_success) ?></p>
                     </div>
                 </div>
@@ -436,7 +440,7 @@ if (!$journal) {
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                         </svg>
-                        Retour
+                        <?= htmlspecialchars(__('access_request.back'), ENT_QUOTES, 'UTF-8') ?>
                     </a>
                 </div>
             <?php endif; ?>
@@ -444,10 +448,10 @@ if (!$journal) {
             <?php if ($success): ?>
                 <div class="bg-green-50 text-green-700 p-6 rounded-2xl mb-6 text-center">
                     <div class="text-4xl font-black text-green-600 mb-2">✓</div>
-                    <p class="font-bold mb-2">Demande envoyée !</p>
+                    <p class="font-bold mb-2"><?= htmlspecialchars(__('access_request.access_sent_title'), ENT_QUOTES, 'UTF-8') ?></p>
                     <p class="text-sm"><?= $success ?></p>
                     <div class="mt-4 p-4 bg-white rounded-xl border-2 border-green-200">
-                        <p class="text-xs text-gray-500 uppercase tracking-widest font-bold mb-1">Votre numéro de demande</p>
+                        <p class="text-xs text-gray-500 uppercase tracking-widest font-bold mb-1"><?= htmlspecialchars(__('access_request.your_request_number'), ENT_QUOTES, 'UTF-8') ?></p>
                         <p class="text-2xl font-black text-green-600"><?= preg_replace('/[^0-9]/', '', $request_number) ?></p>
                     </div>
                 </div>
@@ -456,7 +460,7 @@ if (!$journal) {
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                         </svg>
-                        Retour
+                        <?= htmlspecialchars(__('access_request.back'), ENT_QUOTES, 'UTF-8') ?>
                     </a>
                 </div>
             <?php else: ?>
@@ -485,7 +489,7 @@ if (!$journal) {
                             <div class="mt-2 flex items-center gap-2">
                                 <img src="<?= htmlspecialchars($author_profile_pic) ?>" alt="" class="w-7 h-7 rounded-lg object-cover border border-orange-100">
                                 <p class="text-sm text-gray-600">
-                                    par <span class="font-bold text-dark"><?= htmlspecialchars($author_display_name) ?></span>
+                                    <?= htmlspecialchars(__('access_request.by_author'), ENT_QUOTES, 'UTF-8') ?> <span class="font-bold text-dark"><?= htmlspecialchars($author_display_name) ?></span>
                                     <span class="text-[10px] font-black text-primary ml-1"><?= htmlspecialchars($journal['user_code']) ?></span>
                                 </p>
                             </div>
@@ -495,13 +499,13 @@ if (!$journal) {
                                 <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                                 </svg>
-                                <span>Écrire à l'auteur</span>
+                                <span><?= htmlspecialchars(__('access_request.write_author'), ENT_QUOTES, 'UTF-8') ?></span>
                             </a>
                         </div>
                         <div class="flex flex-col gap-2">
                             <?php if ($follow_request_pending): ?>
                                 <div class="bg-purple-100 text-purple-700 text-xs font-bold py-2 px-3 rounded-xl text-center">
-                                    Demande en attente (<?= htmlspecialchars($follow_request_number) ?>)
+                                    <?= htmlspecialchars(__('access_request.follow_pending', ['number' => $follow_request_number]), ENT_QUOTES, 'UTF-8') ?>
                                 </div>
                             <?php elseif ($is_following): ?>
                                 <form method="POST">
@@ -510,7 +514,7 @@ if (!$journal) {
                                         <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
                                             <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                                         </svg>
-                                        <span>Suivi</span>
+                                        <span><?= htmlspecialchars(__('access_request.following'), ENT_QUOTES, 'UTF-8') ?></span>
                                     </button>
                                 </form>
                             <?php else: ?>
@@ -519,7 +523,7 @@ if (!$journal) {
                                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
                                     </svg>
-                                    <span>Suivre</span>
+                                    <span><?= htmlspecialchars(__('access_request.follow'), ENT_QUOTES, 'UTF-8') ?></span>
                                 </button>
                             <?php endif; ?>
                         </div>
@@ -528,14 +532,14 @@ if (!$journal) {
 
                 <!-- Formulaire de demande de suivi -->
                 <div id="follow-request-form" class="hidden bg-purple-50 border border-purple-200 rounded-2xl p-5 mb-6">
-                    <h3 class="font-bold text-purple-800 mb-3">Demander à suivre cet auteur</h3>
+                    <h3 class="font-bold text-purple-800 mb-3"><?= htmlspecialchars(__('access_request.follow_form_title'), ENT_QUOTES, 'UTF-8') ?></h3>
                     <form method="POST">
                         <input type="hidden" name="action" value="send_follow_request">
                         <div class="space-y-3">
-                            <textarea name="message" rows="3" placeholder="Bonjour, je souhaite suivre votre travail..." 
+                            <textarea name="message" rows="3" placeholder="<?= htmlspecialchars(__('access_request.follow_message_placeholder'), ENT_QUOTES, 'UTF-8') ?>" 
                                       class="w-full bg-white border border-purple-200 rounded-xl py-3 px-4 text-sm focus:ring-2 focus:ring-purple-500 outline-none resize-none"></textarea>
                             <button type="submit" class="w-full bg-purple-600 text-white font-bold py-3 rounded-xl hover:bg-purple-700 transition-all text-sm">
-                                Envoyer la demande de suivi
+                                <?= htmlspecialchars(__('access_request.send_follow_request'), ENT_QUOTES, 'UTF-8') ?>
                             </button>
                         </div>
                     </form>
@@ -545,13 +549,13 @@ if (!$journal) {
                 <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4 mb-6">
                     <div class="flex items-center justify-between">
                         <div>
-                            <p class="text-xs text-blue-600 font-bold uppercase tracking-wider">Vos crédits de demandes</p>
+                            <p class="text-xs text-blue-600 font-bold uppercase tracking-wider"><?= htmlspecialchars(__('access_request.request_credits_label'), ENT_QUOTES, 'UTF-8') ?></p>
                             <p class="text-2xl font-black text-blue-700"><?= $user_credits ?> <span class="text-sm font-normal text-blue-600">/ 100</span></p>
                         </div>
                         <?php if ($user_credits <= 10): ?>
                             <div class="text-right">
-                                <p class="text-xs text-orange-600 font-bold">Crédits faibles !</p>
-                                <a href="payment_11.php" class="text-xs font-bold text-blue-700 hover:underline">Prolonger →</a>
+                                <p class="text-xs text-orange-600 font-bold"><?= htmlspecialchars(__('access_request.credits_low'), ENT_QUOTES, 'UTF-8') ?></p>
+                                <a href="payment_11.php" class="text-xs font-bold text-blue-700 hover:underline"><?= htmlspecialchars(__('access_request.extend'), ENT_QUOTES, 'UTF-8') ?></a>
                             </div>
                         <?php endif; ?>
                     </div>
@@ -567,8 +571,8 @@ if (!$journal) {
                             </svg>
                         </div>
                         <div>
-                            <p class="text-sm font-bold text-orange-800">Besoin d'un forfait actif</p>
-                            <p class="text-xs text-orange-700 mt-1">Pour envoyer des demandes d'accès aux journaux payants, votre abonnement doit être actif. Prolongez votre forfait pour obtenir 100 crédits de demandes.</p>
+                            <p class="text-sm font-bold text-orange-800"><?= htmlspecialchars(__('access_request.subscription_hint_title'), ENT_QUOTES, 'UTF-8') ?></p>
+                            <p class="text-xs text-orange-700 mt-1"><?= htmlspecialchars(__('access_request.subscription_hint_body'), ENT_QUOTES, 'UTF-8') ?></p>
                         </div>
                     </div>
                 </div>
@@ -590,13 +594,13 @@ if (!$journal) {
                             </svg>
                         </div>
                         <div class="flex-1">
-                            <p class="text-base font-black text-green-800 mb-1">✓ Demande approuvée !</p>
-                            <p class="text-xs text-green-700">Votre demande <strong><?= htmlspecialchars($req_number) ?></strong> du <?= $req_date ?> a été acceptée par l'auteur.</p>
+                            <p class="text-base font-black text-green-800 mb-1"><?= htmlspecialchars(__('access_request.approved_title'), ENT_QUOTES, 'UTF-8') ?></p>
+                            <p class="text-xs text-green-700"><?= __('access_request.approved_body', ['number' => htmlspecialchars((string) $req_number, ENT_QUOTES, 'UTF-8'), 'date' => htmlspecialchars((string) $req_date, ENT_QUOTES, 'UTF-8')]) ?></p>
                             <?php if (!empty($existing_access_request['response_message'])): ?>
                             <p class="text-xs italic text-gray-600 mt-2 bg-white/50 p-2 rounded-lg">"<?= htmlspecialchars($existing_access_request['response_message']) ?>"</p>
                             <?php endif; ?>
                             <a href="journal_view.php?id=<?= $journal_id ?>" class="inline-block mt-3 bg-green-600 text-white font-bold py-2 px-5 rounded-xl hover:bg-green-700 transition-all text-sm">
-                                Lire le journal →
+                                <?= htmlspecialchars(__('access_request.read_journal'), ENT_QUOTES, 'UTF-8') ?>
                             </a>
                         </div>
                     </div>
@@ -610,12 +614,12 @@ if (!$journal) {
                             </svg>
                         </div>
                         <div class="flex-1">
-                            <p class="text-base font-black text-red-800 mb-1">✗ Demande refusée</p>
-                            <p class="text-xs text-red-700">Votre demande <strong><?= htmlspecialchars($req_number) ?></strong> du <?= $req_date ?> a été refusée par l'auteur.</p>
+                            <p class="text-base font-black text-red-800 mb-1"><?= htmlspecialchars(__('access_request.rejected_title'), ENT_QUOTES, 'UTF-8') ?></p>
+                            <p class="text-xs text-red-700"><?= __('access_request.rejected_body', ['number' => htmlspecialchars((string) $req_number, ENT_QUOTES, 'UTF-8'), 'date' => htmlspecialchars((string) $req_date, ENT_QUOTES, 'UTF-8')]) ?></p>
                             <?php if (!empty($existing_access_request['response_message'])): ?>
                             <p class="text-xs italic text-gray-600 mt-2 bg-white/50 p-2 rounded-lg">"<?= htmlspecialchars($existing_access_request['response_message']) ?>"</p>
                             <?php endif; ?>
-                            <p class="text-xs text-red-600 mt-2">Vous pouvez contacter l'auteur pour discuter ou faire une nouvelle demande.</p>
+                            <p class="text-xs text-red-600 mt-2"><?= htmlspecialchars(__('access_request.rejected_hint'), ENT_QUOTES, 'UTF-8') ?></p>
                         </div>
                     </div>
                 </div>
@@ -628,9 +632,9 @@ if (!$journal) {
                             </svg>
                         </div>
                         <div class="flex-1">
-                            <p class="text-base font-black text-orange-800 mb-1">⏳ Demande en attente</p>
-                            <p class="text-xs text-orange-700">Votre demande <strong><?= htmlspecialchars($req_number) ?></strong> du <?= $req_date ?> attend la validation de l'auteur.</p>
-                            <p class="text-xs text-orange-600 mt-2">L'auteur sera notifié et vous recevrez une réponse une fois la demande traitée.</p>
+                            <p class="text-base font-black text-orange-800 mb-1"><?= htmlspecialchars(__('access_request.pending_title'), ENT_QUOTES, 'UTF-8') ?></p>
+                            <p class="text-xs text-orange-700"><?= __('access_request.pending_body', ['number' => htmlspecialchars((string) $req_number, ENT_QUOTES, 'UTF-8'), 'date' => htmlspecialchars((string) $req_date, ENT_QUOTES, 'UTF-8')]) ?></p>
+                            <p class="text-xs text-orange-600 mt-2"><?= htmlspecialchars(__('access_request.pending_note'), ENT_QUOTES, 'UTF-8') ?></p>
                         </div>
                     </div>
                 </div>
@@ -646,14 +650,14 @@ if (!$journal) {
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
                         </div>
-                        <p class="text-sm font-bold text-blue-900">Comment accéder à ce journal payant ?</p>
+                        <p class="text-sm font-bold text-blue-900"><?= htmlspecialchars(__('access_request.how_access_title'), ENT_QUOTES, 'UTF-8') ?></p>
                     </div>
                     <ol class="space-y-2 text-xs text-gray-700 ml-2">
-                        <li class="flex gap-2"><span class="font-black text-blue-600">1.</span> <span><strong>Discutez</strong> avec l'auteur via la messagerie pour convenir du paiement</span></li>
-                        <li class="flex gap-2"><span class="font-black text-blue-600">2.</span> <span><strong>Effectuez le paiement</strong> en dehors du site (Mobile Money, virement, espèces, etc.)</span></li>
-                        <li class="flex gap-2"><span class="font-black text-blue-600">3.</span> <span><strong>Envoyez la demande</strong> d'accès officielle (ci-dessous) pour recevoir un numéro D1, D2...</span></li>
-                        <li class="flex gap-2"><span class="font-black text-blue-600">4.</span> <span>L'auteur <strong>approuve</strong> votre demande dès qu'il a reçu le paiement</span></li>
-                        <li class="flex gap-2"><span class="font-black text-blue-600">5.</span> <span>Vous obtenez un accès permanent au journal ✨</span></li>
+                        <li class="flex gap-2"><span class="font-black text-blue-600">1.</span> <span><?= __('access_request.how_step_1') ?></span></li>
+                        <li class="flex gap-2"><span class="font-black text-blue-600">2.</span> <span><?= __('access_request.how_step_2') ?></span></li>
+                        <li class="flex gap-2"><span class="font-black text-blue-600">3.</span> <span><?= __('access_request.how_step_3') ?></span></li>
+                        <li class="flex gap-2"><span class="font-black text-blue-600">4.</span> <span><?= __('access_request.how_step_4') ?></span></li>
+                        <li class="flex gap-2"><span class="font-black text-blue-600">5.</span> <span><?= __('access_request.how_step_5') ?></span></li>
                     </ol>
                 </div>
                 <?php endif; ?>
@@ -664,7 +668,7 @@ if (!$journal) {
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                     </svg>
-                    <span><?= $is_paid_journal ? 'Écrire à l\'auteur pour négocier' : 'Écrire à l\'auteur' ?></span>
+                    <span><?= htmlspecialchars($is_paid_journal ? __('access_request.cta_write_negotiate') : __('access_request.cta_write'), ENT_QUOTES, 'UTF-8') ?></span>
                 </a>
 
                 <?php if ($is_paid_journal): ?>
@@ -674,23 +678,23 @@ if (!$journal) {
                         <div class="w-full border-t border-gray-200"></div>
                     </div>
                     <div class="relative flex justify-center text-xs uppercase">
-                        <span class="bg-white px-3 text-gray-400 font-bold tracking-wider">Après paiement convenu</span>
+                        <span class="bg-white px-3 text-gray-400 font-bold tracking-wider"><?= htmlspecialchars(__('access_request.separator_after_payment'), ENT_QUOTES, 'UTF-8') ?></span>
                     </div>
                 </div>
 
                 <form method="POST" class="space-y-5">
                     <div class="space-y-2">
-                        <label class="text-xs font-black uppercase tracking-widest text-gray-400 ml-2">Message à joindre à votre demande</label>
-                        <textarea name="message" rows="3" placeholder="Bonjour, j'ai effectué le paiement convenu via..." 
+                        <label class="text-xs font-black uppercase tracking-widest text-gray-400 ml-2"><?= htmlspecialchars(__('access_request.message_label'), ENT_QUOTES, 'UTF-8') ?></label>
+                        <textarea name="message" rows="3" placeholder="<?= htmlspecialchars(__('access_request.message_placeholder'), ENT_QUOTES, 'UTF-8') ?>" 
                                   class="w-full input-lucide rounded-2xl py-4 px-6 font-medium text-dark placeholder-gray-300 resize-none"></textarea>
-                        <p class="text-xs text-gray-400 ml-2">Mentionnez le mode de paiement et la référence pour faciliter l'approbation</p>
+                        <p class="text-xs text-gray-400 ml-2"><?= htmlspecialchars(__('access_request.message_hint'), ENT_QUOTES, 'UTF-8') ?></p>
                     </div>
 
                     <button type="submit" class="w-full bg-orange-500 text-white font-bold py-3.5 rounded-2xl shadow-xl shadow-orange-500/30 hover:bg-orange-600 transition-all text-sm flex items-center justify-center space-x-2">
                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
-                        <span>Envoyer la demande d'accès officielle</span>
+                        <span><?= htmlspecialchars(__('access_request.send_official_request'), ENT_QUOTES, 'UTF-8') ?></span>
                     </button>
                 </form>
                 <?php else: ?>
@@ -703,8 +707,8 @@ if (!$journal) {
                             </svg>
                         </div>
                         <div>
-                            <p class="text-sm font-bold text-green-800">Journal en accès libre</p>
-                            <p class="text-xs text-green-700 mt-1">Ce journal est public, vous pouvez le consulter directement. Aucune demande d'accès nécessaire.</p>
+                            <p class="text-sm font-bold text-green-800"><?= htmlspecialchars(__('access_request.free_journal_title'), ENT_QUOTES, 'UTF-8') ?></p>
+                            <p class="text-xs text-green-700 mt-1"><?= htmlspecialchars(__('access_request.free_journal_body'), ENT_QUOTES, 'UTF-8') ?></p>
                         </div>
                     </div>
                 </div>
@@ -713,13 +717,13 @@ if (!$journal) {
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>
-                    <span>Lire le journal</span>
+                    <span><?= htmlspecialchars(__('access_request.read_journal_btn'), ENT_QUOTES, 'UTF-8') ?></span>
                 </a>
                 <?php endif; ?>
 
                 <div class="mt-6 text-center">
                     <a href="dashboard_6.php" class="text-sm font-bold text-gray-500 hover:text-primary transition-colors">
-                        ← Annuler et retourner
+                        <?= htmlspecialchars(__('access_request.cancel_back'), ENT_QUOTES, 'UTF-8') ?>
                     </a>
                 </div>
 

@@ -7,6 +7,9 @@
  */
 
 session_start();
+require_once __DIR__ . '/i18n.php';
+gntoma_init_locale_from_request();
+
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../index.php");
     exit;
@@ -15,11 +18,11 @@ if (!isset($_SESSION['user_id'])) {
 $error_message = $_GET['error'] ?? '';
 ?>
 <!DOCTYPE html>
-<html lang="fr" class="scroll-smooth">
+<html lang="<?= htmlspecialchars(gntoma_html_lang(), ENT_QUOTES, 'UTF-8') ?>" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GNTOMA - Nouveau Journal</title>
+    <title><?= htmlspecialchars(__('journal_create.page_title'), ENT_QUOTES, 'UTF-8') ?></title>
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
@@ -83,21 +86,26 @@ $error_message = $_GET['error'] ?? '';
 
     <div class="max-w-2xl mx-auto animate__animated animate__fadeInUp">
         
-        <div class="flex items-center justify-between mb-8 md:mb-10">
+        <div class="flex items-center justify-between mb-8 md:mb-10 gap-2">
             <a href="dashboard_6.php" class="w-12 h-12 bg-white/80 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-sm border border-white hover:scale-105 smooth-transition text-dark">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
                 </svg>
             </a>
-            <h1 class="text-2xl md:text-3xl font-black tracking-tight text-center">Nouveau Journal</h1>
-            <div class="w-12"></div> </div>
+            <h1 class="text-2xl md:text-3xl font-black tracking-tight text-center flex-1"><?= htmlspecialchars(__('journal_create.heading'), ENT_QUOTES, 'UTF-8') ?></h1>
+            <div class="flex-shrink-0"><?= gntoma_lang_switch_markup() ?></div>
+        </div>
 
         <?php if ($error_message): ?>
             <div class="bg-red-50 text-red-600 font-bold p-4 rounded-2xl mb-6 text-center border border-red-100 animate__animated animate__headShake">
                 <?php 
-                    if($error_message === 'empty_fields') echo "Le titre est obligatoire.";
-                    else if($error_message === 'system_error') echo "Erreur système. Veuillez réessayer.";
-                    else echo "Une erreur est survenue.";
+                    if ($error_message === 'empty_fields') {
+                        echo htmlspecialchars(__('journal_create.err_title_required'), ENT_QUOTES, 'UTF-8');
+                    } elseif ($error_message === 'system_error') {
+                        echo htmlspecialchars(__('journal_create.err_system'), ENT_QUOTES, 'UTF-8');
+                    } else {
+                        echo htmlspecialchars(__('journal_create.err_generic'), ENT_QUOTES, 'UTF-8');
+                    }
                 ?>
             </div>
         <?php endif; ?>
@@ -107,13 +115,13 @@ $error_message = $_GET['error'] ?? '';
             <div class="glass-panel rounded-[2.5rem] p-6 md:p-10 space-y-8">
                 
                 <div class="space-y-3">
-                    <label class="text-xs font-black uppercase tracking-widest text-gray-400 ml-2">Titre de la publication</label>
-                    <input type="text" name="title" required placeholder="Ex: Mes mémoires secrètes..." class="w-full input-lucide rounded-2xl py-4 md:py-5 px-6 font-bold text-lg md:text-xl text-dark placeholder-gray-300">
+                    <label class="text-xs font-black uppercase tracking-widest text-gray-400 ml-2"><?= htmlspecialchars(__('journal_create.label_title'), ENT_QUOTES, 'UTF-8') ?></label>
+                    <input type="text" name="title" required placeholder="<?= htmlspecialchars(__('journal_create.placeholder_title'), ENT_QUOTES, 'UTF-8') ?>" class="w-full input-lucide rounded-2xl py-4 md:py-5 px-6 font-bold text-lg md:text-xl text-dark placeholder-gray-300">
                 </div>
 
                 <!-- Image de couverture -->
                 <div class="space-y-3">
-                    <label class="text-xs font-black uppercase tracking-widest text-gray-400 ml-2">Image de couverture</label>
+                    <label class="text-xs font-black uppercase tracking-widest text-gray-400 ml-2"><?= htmlspecialchars(__('journal_create.label_cover'), ENT_QUOTES, 'UTF-8') ?></label>
                     <div class="relative">
                         <input type="file" name="cover_image" id="cover_image" accept="image/*" class="hidden" onchange="previewImage(this)">
                         <label for="cover_image" class="flex items-center justify-center w-full h-40 bg-white border-2 border-dashed border-gray-300 rounded-2xl cursor-pointer hover:border-primary hover:bg-blue-50 transition-all group">
@@ -121,23 +129,23 @@ $error_message = $_GET['error'] ?? '';
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-gray-400 group-hover:text-primary mx-auto mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                 </svg>
-                                <span class="text-sm text-gray-500 font-medium">Cliquez pour ajouter une image</span>
+                                <span class="text-sm text-gray-500 font-medium"><?= htmlspecialchars(__('journal_create.cover_cta'), ENT_QUOTES, 'UTF-8') ?></span>
                             </div>
                             <img id="image-preview" class="absolute inset-0 w-full h-full object-cover rounded-2xl hidden" />
                         </label>
                     </div>
-                    <p class="text-xs text-gray-400 ml-2">Format: JPG, PNG, GIF (max 5MB)</p>
+                    <p class="text-xs text-gray-400 ml-2"><?= htmlspecialchars(__('journal_create.cover_hint'), ENT_QUOTES, 'UTF-8') ?></p>
                 </div>
 
                 <!-- Mots-clés -->
                 <div class="space-y-3">
-                    <label class="text-xs font-black uppercase tracking-widest text-gray-400 ml-2">Mots-clés</label>
-                    <input type="text" name="keywords" placeholder="amour, poésie, voyage, ... (séparés par des virgules)" class="w-full input-lucide rounded-2xl py-4 px-6 font-medium text-dark placeholder-gray-300">
-                    <p class="text-xs text-gray-400 ml-2">Aidez les lecteurs à trouver votre journal</p>
+                    <label class="text-xs font-black uppercase tracking-widest text-gray-400 ml-2"><?= htmlspecialchars(__('journal_create.label_keywords'), ENT_QUOTES, 'UTF-8') ?></label>
+                    <input type="text" name="keywords" placeholder="<?= htmlspecialchars(__('journal_create.placeholder_keywords'), ENT_QUOTES, 'UTF-8') ?>" class="w-full input-lucide rounded-2xl py-4 px-6 font-medium text-dark placeholder-gray-300">
+                    <p class="text-xs text-gray-400 ml-2"><?= htmlspecialchars(__('journal_create.keywords_help'), ENT_QUOTES, 'UTF-8') ?></p>
                 </div>
 
                 <div class="space-y-3">
-                    <label class="text-xs font-black uppercase tracking-widest text-gray-400 ml-2">Visibilité & Accès</label>
+                    <label class="text-xs font-black uppercase tracking-widest text-gray-400 ml-2"><?= htmlspecialchars(__('journal_create.label_visibility'), ENT_QUOTES, 'UTF-8') ?></label>
                     
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         
@@ -145,8 +153,8 @@ $error_message = $_GET['error'] ?? '';
                             <input type="radio" name="status" value="private" class="peer sr-only" checked onchange="togglePriceField(false)">
                             <div class="h-full bg-white border-2 border-gray-100 rounded-2xl p-5 hover:border-blue-200 smooth-transition flex flex-col items-center text-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-400 radio-icon mb-3 smooth-transition" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                                <span class="font-bold text-dark block mb-1">Privé</span>
-                                <span class="text-[10px] text-gray-500 font-medium leading-tight">Vous seul pouvez le voir et le lire.</span>
+                                <span class="font-bold text-dark block mb-1"><?= htmlspecialchars(__('journal_create.status_private'), ENT_QUOTES, 'UTF-8') ?></span>
+                                <span class="text-[10px] text-gray-500 font-medium leading-tight"><?= htmlspecialchars(__('journal_create.status_private_desc'), ENT_QUOTES, 'UTF-8') ?></span>
                             </div>
                         </label>
 
@@ -154,8 +162,8 @@ $error_message = $_GET['error'] ?? '';
                             <input type="radio" name="status" value="public" class="peer sr-only" onchange="togglePriceField(false)">
                             <div class="h-full bg-white border-2 border-gray-100 rounded-2xl p-5 hover:border-blue-200 smooth-transition flex flex-col items-center text-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-400 radio-icon mb-3 smooth-transition" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                <span class="font-bold text-dark block mb-1">Public</span>
-                                <span class="text-[10px] text-gray-500 font-medium leading-tight">Accessible gratuitement à tous.</span>
+                                <span class="font-bold text-dark block mb-1"><?= htmlspecialchars(__('journal_create.status_public'), ENT_QUOTES, 'UTF-8') ?></span>
+                                <span class="text-[10px] text-gray-500 font-medium leading-tight"><?= htmlspecialchars(__('journal_create.status_public_desc'), ENT_QUOTES, 'UTF-8') ?></span>
                             </div>
                         </label>
 
@@ -163,8 +171,8 @@ $error_message = $_GET['error'] ?? '';
                             <input type="radio" name="status" value="paid" class="peer sr-only" onchange="togglePriceField(true)">
                             <div class="h-full bg-white border-2 border-gray-100 rounded-2xl p-5 hover:border-blue-200 smooth-transition flex flex-col items-center text-center">
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-400 radio-icon mb-3 smooth-transition" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                <span class="font-bold text-dark block mb-1">Payant</span>
-                                <span class="text-[10px] text-gray-500 font-medium leading-tight">Monétisez l'accès à ce contenu.</span>
+                                <span class="font-bold text-dark block mb-1"><?= htmlspecialchars(__('journal_create.status_paid'), ENT_QUOTES, 'UTF-8') ?></span>
+                                <span class="text-[10px] text-gray-500 font-medium leading-tight"><?= htmlspecialchars(__('journal_create.status_paid_desc'), ENT_QUOTES, 'UTF-8') ?></span>
                             </div>
                         </label>
 
@@ -172,15 +180,15 @@ $error_message = $_GET['error'] ?? '';
                 </div>
 
                 <div id="price-field" class="space-y-3 hidden">
-                    <label class="text-xs font-black uppercase tracking-widest text-gray-400 ml-2">Prix</label>
-                    <input type="number" name="price" step="0.01" placeholder="Ex: 9.99" class="w-full input-lucide rounded-2xl py-4 px-6 font-bold text-lg md:text-xl text-dark placeholder-gray-300">
-                    <p class="text-xs text-gray-400 ml-2">Prix en euros (€)</p>
+                    <label class="text-xs font-black uppercase tracking-widest text-gray-400 ml-2"><?= htmlspecialchars(__('journal_create.label_price'), ENT_QUOTES, 'UTF-8') ?></label>
+                    <input type="number" name="price" step="0.01" placeholder="<?= htmlspecialchars(__('journal_create.placeholder_price'), ENT_QUOTES, 'UTF-8') ?>" class="w-full input-lucide rounded-2xl py-4 px-6 font-bold text-lg md:text-xl text-dark placeholder-gray-300">
+                    <p class="text-xs text-gray-400 ml-2"><?= htmlspecialchars(__('journal_create.price_hint'), ENT_QUOTES, 'UTF-8') ?></p>
                 </div>
 
             </div>
 
             <button type="submit" class="w-full bg-dark text-white font-bold py-5 rounded-[2rem] shadow-2xl hover:bg-black active:scale-95 smooth-transition flex items-center justify-center space-x-3 group">
-                <span class="text-lg">Créer le journal</span>
+                <span class="text-lg"><?= htmlspecialchars(__('journal_create.submit'), ENT_QUOTES, 'UTF-8') ?></span>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 group-hover:translate-x-1 smooth-transition" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" /></svg>
             </button>
 

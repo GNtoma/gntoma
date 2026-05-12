@@ -1,5 +1,9 @@
 <?php
+declare(strict_types=1);
+
 session_start();
+require_once __DIR__ . '/i18n.php';
+gntoma_init_locale_from_request();
 require_once '../includes/db.php';
 
 // Vérification de session
@@ -31,7 +35,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && isset($_
         $request = $stmt->fetch();
         
         if (!$request) {
-            throw new Exception("Demande introuvable");
+            throw new Exception(__('follow_requests_list.err_not_found'));
         }
         
         if ($action === 'accept') {
@@ -51,7 +55,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && isset($_
             ");
             $follow_stmt->execute([$request['requester_user_code'], $user_code]);
             
-            $success = "Demande de suivi acceptée !";
+            $success = __('follow_requests_list.success_accept');
         } elseif ($action === 'reject') {
             // Mettre à jour le statut de la demande
             $update_stmt = $pdo->prepare("
@@ -61,7 +65,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && isset($_
             ");
             $update_stmt->execute([$request_id]);
             
-            $success = "Demande de suivi rejetée.";
+            $success = __('follow_requests_list.success_reject');
         }
         
         $pdo->commit();
@@ -70,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && isset($_
             $pdo->rollBack();
         }
         error_log("Erreur action follow request : " . $e->getMessage());
-        $error = "Erreur lors du traitement de la demande.";
+        $error = __('follow_requests_list.err_process');
     }
 }
 
@@ -106,11 +110,11 @@ try {
 }
 ?>
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="<?= htmlspecialchars(gntoma_html_lang(), ENT_QUOTES, 'UTF-8') ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Demandes de Suivi - GNTOMA</title>
+    <title><?= htmlspecialchars(__('follow_requests_list.page_title'), ENT_QUOTES, 'UTF-8') ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script>
@@ -164,10 +168,10 @@ try {
             td { border: none; position: relative; padding-left: 50%; padding-top: 0.75rem; padding-bottom: 0.75rem; border-bottom: 1px solid #f3f4f6; }
             td:last-child { border-bottom: none; }
             td:before { position: absolute; top: 0.75rem; left: 1rem; width: 45%; padding-right: 10px; white-space: nowrap; font-weight: 800; font-size: 0.75rem; color: #9ca3af; text-transform: uppercase; }
-            td:nth-of-type(1):before { content: "Utilisateur"; }
-            td:nth-of-type(2):before { content: "Demande"; }
-            td:nth-of-type(3):before { content: "Date"; }
-            td:nth-of-type(4):before { content: "Statut"; }
+            td:nth-of-type(1):before { content: "<?= htmlspecialchars(__('follow_requests_list.th_user'), ENT_QUOTES, 'UTF-8') ?>"; }
+            td:nth-of-type(2):before { content: "<?= htmlspecialchars(__('follow_requests_list.th_request'), ENT_QUOTES, 'UTF-8') ?>"; }
+            td:nth-of-type(3):before { content: "<?= htmlspecialchars(__('follow_requests_list.th_date'), ENT_QUOTES, 'UTF-8') ?>"; }
+            td:nth-of-type(4):before { content: "<?= htmlspecialchars(__('follow_requests_list.th_status'), ENT_QUOTES, 'UTF-8') ?>"; }
         }
     </style>
 </head>
@@ -175,14 +179,14 @@ try {
     
     <!-- Header -->
     <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-3 sm:px-4 py-3 sm:py-4">
-        <div class="max-w-2xl mx-auto flex items-center justify-between">
+        <div class="max-w-2xl mx-auto flex items-center justify-between gap-2">
             <a href="dashboard_6.php" class="w-9 h-9 sm:w-10 sm:h-10 bg-gray-100 rounded-xl flex items-center justify-center hover:bg-gray-200 transition-all">
                 <svg class="h-4 w-4 sm:h-5 sm:w-5 text-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
                 </svg>
             </a>
-            <h1 class="text-base sm:text-lg font-bold text-dark">Demandes de Suivi</h1>
-            <div class="w-9 sm:w-10"></div>
+            <h1 class="text-base sm:text-lg font-bold text-dark flex-1 text-center"><?= htmlspecialchars(__('follow_requests_list.heading'), ENT_QUOTES, 'UTF-8') ?></h1>
+            <div class="flex-shrink-0"><?= gntoma_lang_switch_markup() ?></div>
         </div>
     </header>
 
@@ -203,7 +207,7 @@ try {
         <!-- Demandes en attente -->
         <?php if (!empty($pending_requests)): ?>
         <div class="glass-panel rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-5">
-            <h2 class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Demandes en attente (<?= count($pending_requests) ?>)</h2>
+            <h2 class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4"><?= htmlspecialchars(__('follow_requests_list.pending_title', ['count' => (string) count($pending_requests)]), ENT_QUOTES, 'UTF-8') ?></h2>
             
             <div class="space-y-3 sm:space-y-4">
                 <?php foreach ($pending_requests as $request): 
@@ -228,14 +232,14 @@ try {
                                     <input type="hidden" name="action" value="accept">
                                     <input type="hidden" name="request_id" value="<?= $request['id'] ?>">
                                     <button type="submit" class="w-full bg-green-500 text-white font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm hover:bg-green-600 transition-all">
-                                        Accepter
+                                        <?= htmlspecialchars(__('follow_requests_list.accept'), ENT_QUOTES, 'UTF-8') ?>
                                     </button>
                                 </form>
                                 <form method="POST" class="flex-1">
                                     <input type="hidden" name="action" value="reject">
                                     <input type="hidden" name="request_id" value="<?= $request['id'] ?>">
                                     <button type="submit" class="w-full bg-red-100 text-red-600 font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm hover:bg-red-200 transition-all">
-                                        Refuser
+                                        <?= htmlspecialchars(__('follow_requests_list.reject'), ENT_QUOTES, 'UTF-8') ?>
                                     </button>
                                 </form>
                             </div>
@@ -252,24 +256,24 @@ try {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
             </div>
-            <h2 class="text-lg sm:text-xl font-black text-dark mb-2">Aucune demande en attente</h2>
-            <p class="text-gray-500 text-xs sm:text-sm mb-4">Vous n'avez pas de demandes de suivi à traiter</p>
+            <h2 class="text-lg sm:text-xl font-black text-dark mb-2"><?= htmlspecialchars(__('follow_requests_list.empty_pending'), ENT_QUOTES, 'UTF-8') ?></h2>
+            <p class="text-gray-500 text-xs sm:text-sm mb-4"><?= htmlspecialchars(__('follow_requests_list.empty_hint'), ENT_QUOTES, 'UTF-8') ?></p>
         </div>
         <?php endif; ?>
 
         <!-- Historique des demandes -->
         <?php if (!empty($other_requests)): ?>
         <div class="glass-panel rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-5">
-            <h2 class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Historique</h2>
+            <h2 class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4"><?= htmlspecialchars(__('follow_requests_list.history'), ENT_QUOTES, 'UTF-8') ?></h2>
             
             <div class="overflow-x-auto">
                 <table>
                     <thead>
                         <tr>
-                            <th>Utilisateur</th>
-                            <th>Demande</th>
-                            <th>Date</th>
-                            <th>Statut</th>
+                            <th><?= htmlspecialchars(__('follow_requests_list.th_user'), ENT_QUOTES, 'UTF-8') ?></th>
+                            <th><?= htmlspecialchars(__('follow_requests_list.th_request'), ENT_QUOTES, 'UTF-8') ?></th>
+                            <th><?= htmlspecialchars(__('follow_requests_list.th_date'), ENT_QUOTES, 'UTF-8') ?></th>
+                            <th><?= htmlspecialchars(__('follow_requests_list.th_status'), ENT_QUOTES, 'UTF-8') ?></th>
                         </tr>
                     </thead>
                     <tbody>
@@ -277,7 +281,9 @@ try {
                             $profile_pic = !empty($request['profile_pic']) ? '../' . $request['profile_pic'] : '../images/user_default.png';
                             $name = htmlspecialchars(($request['first_name'] ?? '') . ' ' . ($request['last_name'] ?? ''));
                             $status_class = $request['status'] === 'accepted' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700';
-                            $status_text = $request['status'] === 'accepted' ? 'Accepté' : 'Refusé';
+                            $status_text = $request['status'] === 'accepted'
+                                ? __('follow_requests_list.status_accepted')
+                                : __('follow_requests_list.status_rejected');
                         ?>
                         <tr>
                             <td>
@@ -298,7 +304,7 @@ try {
                             </td>
                             <td>
                                 <span class="<?= $status_class ?> text-[10px] sm:text-xs font-bold px-2 py-1 rounded-full whitespace-nowrap">
-                                    <?= $status_text ?>
+                                    <?= htmlspecialchars($status_text, ENT_QUOTES, 'UTF-8') ?>
                                 </span>
                             </td>
                         </tr>

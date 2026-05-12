@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 session_start();
 require_once 'config.php';
+require_once __DIR__ . '/i18n.php';
+gntoma_init_locale_from_request();
 
 // Vérification de session
 if (!isset($_SESSION['user_id'])) {
@@ -90,17 +92,21 @@ function formatDate(string $date): string {
     $dt = new DateTime($date);
     $now = new DateTime();
     $diff = $now->diff($dt);
-    
-    if ($diff->days == 0) {
-        if ($diff->h == 0) {
-            return "Il y a " . $diff->i . " min";
+
+    if ($diff->days === 0) {
+        if ($diff->h === 0) {
+            return __('requests_list.time_minutes', ['m' => (string) $diff->i]);
         }
-        return "Il y a " . $diff->h . " h";
-    } elseif ($diff->days == 1) {
-        return "Hier";
-    } elseif ($diff->days < 7) {
-        return "Il y a " . $diff->days . " jours";
+
+        return __('requests_list.time_hours', ['h' => (string) $diff->h]);
     }
+    if ($diff->days === 1) {
+        return __('requests_list.time_yesterday');
+    }
+    if ($diff->days < 7) {
+        return __('requests_list.time_days', ['d' => (string) $diff->days]);
+    }
+
     return $dt->format('d/m/Y');
 }
 
@@ -110,11 +116,11 @@ function getRequestNumber(string $requestNumber): string {
 }
 ?>
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="<?= htmlspecialchars(gntoma_html_lang(), ENT_QUOTES, 'UTF-8') ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GNTOMA - Demandes d'Accès</title>
+    <title><?= htmlspecialchars(__('requests_list.page_title'), ENT_QUOTES, 'UTF-8') ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script>
@@ -158,14 +164,14 @@ function getRequestNumber(string $requestNumber): string {
 
     <!-- Header sticky moderne -->
     <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-3 sm:px-4 py-3 sm:py-4">
-        <div class="max-w-4xl mx-auto flex items-center justify-between">
+        <div class="max-w-4xl mx-auto flex items-center justify-between gap-2">
             <a href="dashboard_6.php" class="w-9 h-9 sm:w-10 sm:h-10 bg-gray-100 rounded-xl flex items-center justify-center hover:bg-gray-200 transition-all">
                 <svg class="h-4 w-4 sm:h-5 sm:w-5 text-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
                 </svg>
             </a>
-            <h1 class="text-base sm:text-lg font-bold text-dark">Demandes d'Accès</h1>
-            <div class="w-9 sm:w-10"></div>
+            <h1 class="text-base sm:text-lg font-bold text-dark flex-1 text-center"><?= htmlspecialchars(__('requests_list.heading'), ENT_QUOTES, 'UTF-8') ?></h1>
+            <div class="flex-shrink-0"><?= gntoma_lang_switch_markup() ?></div>
         </div>
     </header>
 
@@ -179,7 +185,7 @@ function getRequestNumber(string $requestNumber): string {
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
                 <p class="text-sm text-yellow-800">
-                    <span class="font-bold">Système non activé :</span> Le système de demandes d'accès n'est pas encore configuré. Veuillez exécuter la migration 011.
+                    <span class="font-bold"><?= htmlspecialchars(__('requests_list.migration_warning'), ENT_QUOTES, 'UTF-8') ?></span> <?= htmlspecialchars(__('requests_list.migration_body'), ENT_QUOTES, 'UTF-8') ?>
                 </p>
             </div>
         </div>
@@ -189,19 +195,19 @@ function getRequestNumber(string $requestNumber): string {
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mb-4 sm:mb-6">
             <a href="?status=pending" class="glass-panel rounded-xl sm:rounded-2xl p-3 sm:p-4 text-center transition-all <?= $filter_status === 'pending' ? 'ring-2 ring-orange-500' : 'hover:ring-1 hover:ring-orange-300' ?>">
                 <p class="text-xl sm:text-2xl font-black text-orange-600"><?= $stats['pending'] ?></p>
-                <p class="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wide">En attente</p>
+                <p class="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wide"><?= htmlspecialchars(__('requests_list.stat_pending'), ENT_QUOTES, 'UTF-8') ?></p>
             </a>
             <a href="?status=approved" class="glass-panel rounded-xl sm:rounded-2xl p-3 sm:p-4 text-center transition-all <?= $filter_status === 'approved' ? 'ring-2 ring-green-500' : 'hover:ring-1 hover:ring-green-300' ?>">
                 <p class="text-xl sm:text-2xl font-black text-green-600"><?= $stats['approved'] ?></p>
-                <p class="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wide">Approuvées</p>
+                <p class="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wide"><?= htmlspecialchars(__('requests_list.stat_approved'), ENT_QUOTES, 'UTF-8') ?></p>
             </a>
             <a href="?status=rejected" class="glass-panel rounded-xl sm:rounded-2xl p-3 sm:p-4 text-center transition-all <?= $filter_status === 'rejected' ? 'ring-2 ring-red-500' : 'hover:ring-1 hover:ring-red-300' ?>">
                 <p class="text-xl sm:text-2xl font-black text-red-600"><?= $stats['rejected'] ?></p>
-                <p class="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wide">Refusées</p>
+                <p class="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wide"><?= htmlspecialchars(__('requests_list.stat_rejected'), ENT_QUOTES, 'UTF-8') ?></p>
             </a>
             <a href="?status=all" class="glass-panel rounded-xl sm:rounded-2xl p-3 sm:p-4 text-center transition-all <?= $filter_status === 'all' ? 'ring-2 ring-primary' : 'hover:ring-1 hover:ring-blue-300' ?>">
                 <p class="text-xl sm:text-2xl font-black text-dark"><?= $stats['total'] ?></p>
-                <p class="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wide">Total</p>
+                <p class="text-[10px] sm:text-xs font-bold text-gray-500 uppercase tracking-wide"><?= htmlspecialchars(__('requests_list.stat_total'), ENT_QUOTES, 'UTF-8') ?></p>
             </a>
         </div>
 
@@ -216,11 +222,11 @@ function getRequestNumber(string $requestNumber): string {
                         </svg>
                     </div>
                     <input type="text" name="search" value="<?= htmlspecialchars($search_request) ?>" 
-                           placeholder="D1, D15..." 
+                           placeholder="<?= htmlspecialchars(__('requests_list.search_placeholder'), ENT_QUOTES, 'UTF-8') ?>" 
                            class="w-full input-lucide rounded-xl py-2.5 sm:py-3 pl-10 sm:pl-12 pr-3 font-medium text-xs sm:text-sm">
                 </div>
                 <button type="submit" class="bg-dark text-white font-bold py-2.5 sm:py-3 px-4 sm:px-6 rounded-xl hover:bg-black transition-all text-xs sm:text-sm">
-                    Chercher
+                    <?= htmlspecialchars(__('requests_list.search_btn'), ENT_QUOTES, 'UTF-8') ?>
                 </button>
             </form>
         </div>
@@ -233,8 +239,8 @@ function getRequestNumber(string $requestNumber): string {
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                 </div>
-                <h3 class="text-lg sm:text-xl font-black text-dark mb-2">Aucune demande</h3>
-                <p class="text-gray-500 text-xs sm:text-sm">Vous n'avez pas de demandes <?= $filter_status === 'pending' ? 'en attente' : '' ?> pour le moment.</p>
+                <h3 class="text-lg sm:text-xl font-black text-dark mb-2"><?= htmlspecialchars(__('requests_list.empty_title'), ENT_QUOTES, 'UTF-8') ?></h3>
+                <p class="text-gray-500 text-xs sm:text-sm"><?= htmlspecialchars($filter_status === 'pending' ? __('requests_list.empty_text_pending') : __('requests_list.empty_text_other'), ENT_QUOTES, 'UTF-8') ?></p>
             </div>
         <?php else: ?>
             <div class="space-y-3 sm:space-y-4">
@@ -246,9 +252,9 @@ function getRequestNumber(string $requestNumber): string {
                         'rejected' => 'bg-red-100 text-red-700 border-red-200'
                     ];
                     $status_labels = [
-                        'pending' => 'En attente',
-                        'approved' => 'Approuvée',
-                        'rejected' => 'Refusée'
+                        'pending' => __('requests_list.status_pending'),
+                        'approved' => __('requests_list.status_approved'),
+                        'rejected' => __('requests_list.status_rejected'),
                     ];
                     $badge_color = $request['status'] === 'pending' ? 'bg-orange-500' : ($request['status'] === 'approved' ? 'bg-green-500' : 'bg-red-500');
                 ?>
@@ -258,14 +264,14 @@ function getRequestNumber(string $requestNumber): string {
                             <div class="flex items-start gap-3 sm:gap-4 flex-1">
                                 <!-- Request Number Badge -->
                                 <div class="flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 <?= $badge_color ?> rounded-xl sm:rounded-2xl flex flex-col items-center justify-center text-white shadow-lg">
-                                    <span class="text-[8px] sm:text-xs font-bold uppercase">Demande</span>
+                                    <span class="text-[8px] sm:text-xs font-bold uppercase"><?= htmlspecialchars(__('requests_list.badge_request'), ENT_QUOTES, 'UTF-8') ?></span>
                                     <span class="text-lg sm:text-2xl font-black leading-none"><?= getRequestNumber($request['request_number']) ?></span>
                                 </div>
                                 
                                 <div class="flex-1 min-w-0">
                                     <div class="flex items-center flex-wrap gap-1.5 mb-1">
                                         <span class="px-2 py-0.5 text-[9px] sm:text-[10px] font-black uppercase tracking-wider rounded-full <?= $status_colors[$request['status']] ?>">
-                                            <?= $status_labels[$request['status']] ?>
+                                            <?= htmlspecialchars($status_labels[$request['status']] ?? $request['status'], ENT_QUOTES, 'UTF-8') ?>
                                         </span>
                                         <span class="text-[10px] sm:text-xs text-gray-400"><?= formatDate($request['created_at']) ?></span>
                                     </div>
@@ -282,7 +288,7 @@ function getRequestNumber(string $requestNumber): string {
                                         <p class="text-xs sm:text-sm text-gray-500">
                                         <span class="font-bold text-dark"><?= htmlspecialchars($requesterDisplayName) ?></span>
                                         <span class="text-[10px] text-primary font-black ml-1"><?= htmlspecialchars($request['requester_user_code']) ?></span>
-                                        demande l'accès
+                                        <?= htmlspecialchars(__('requests_list.requests_access'), ENT_QUOTES, 'UTF-8') ?>
                                         </p>
                                     </div>
                                     
@@ -295,7 +301,7 @@ function getRequestNumber(string $requestNumber): string {
                                     <?php endif; ?>
                                     
                                     <?php if (!empty($request['response_message'])): ?>
-                                        <p class="text-xs sm:text-sm text-blue-600 mt-2 line-clamp-2">Votre réponse: "<?= htmlspecialchars($request['response_message']) ?>"</p>
+                                        <p class="text-xs sm:text-sm text-blue-600 mt-2 line-clamp-2"><?= htmlspecialchars(__('requests_list.your_reply'), ENT_QUOTES, 'UTF-8') ?> "<?= htmlspecialchars($request['response_message']) ?>"</p>
                                     <?php endif; ?>
                                 </div>
                             </div>
@@ -308,15 +314,15 @@ function getRequestNumber(string $requestNumber): string {
                                         <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                                         </svg>
-                                        Discuter
+                                        <?= htmlspecialchars(__('requests_list.discuss'), ENT_QUOTES, 'UTF-8') ?>
                                     </a>
                                     <a href="journal_request_approve.php?id=<?= $request['id'] ?>&action=approve"
                                        class="flex-1 md:flex-none bg-green-500 text-white font-bold py-2 px-4 rounded-xl hover:bg-green-600 transition-all text-xs sm:text-sm text-center shadow-md shadow-green-500/30">
-                                        ✓ Accepter
+                                        <?= htmlspecialchars(__('requests_list.accept'), ENT_QUOTES, 'UTF-8') ?>
                                     </a>
                                     <a href="journal_request_approve.php?id=<?= $request['id'] ?>&action=reject"
                                        class="flex-1 md:flex-none bg-red-100 text-red-600 font-bold py-2 px-4 rounded-xl hover:bg-red-200 transition-all text-xs sm:text-sm text-center">
-                                        ✗ Refuser
+                                        <?= htmlspecialchars(__('requests_list.reject'), ENT_QUOTES, 'UTF-8') ?>
                                     </a>
                                 </div>
                             <?php elseif ($request['status'] === 'rejected'): ?>
@@ -326,15 +332,15 @@ function getRequestNumber(string $requestNumber): string {
                                         <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                                         </svg>
-                                        Discuter
+                                        <?= htmlspecialchars(__('requests_list.discuss'), ENT_QUOTES, 'UTF-8') ?>
                                     </a>
                                     <a href="journal_request_approve.php?id=<?= $request['id'] ?>&action=reactivate"
                                        class="flex-1 md:flex-none bg-orange-500 text-white font-bold py-2 px-4 rounded-xl hover:bg-orange-600 transition-all text-xs sm:text-sm text-center shadow-md shadow-orange-500/30">
-                                        ↻ Réactiver
+                                        <?= htmlspecialchars(__('requests_list.reactivate'), ENT_QUOTES, 'UTF-8') ?>
                                     </a>
                                     <a href="journal_request_approve.php?id=<?= $request['id'] ?>&action=view"
                                        class="flex-1 md:flex-none bg-gray-100 text-dark font-bold py-2 px-4 rounded-xl hover:bg-gray-200 transition-all text-xs sm:text-sm text-center">
-                                        Voir détails
+                                        <?= htmlspecialchars(__('requests_list.view_details'), ENT_QUOTES, 'UTF-8') ?>
                                     </a>
                                 </div>
                             <?php else: ?>
@@ -344,11 +350,11 @@ function getRequestNumber(string $requestNumber): string {
                                         <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                                         </svg>
-                                        Discuter
+                                        <?= htmlspecialchars(__('requests_list.discuss'), ENT_QUOTES, 'UTF-8') ?>
                                     </a>
                                     <a href="journal_request_approve.php?id=<?= $request['id'] ?>&action=view"
                                        class="flex-1 md:flex-none bg-gray-100 text-dark font-bold py-2 px-4 rounded-xl hover:bg-gray-200 transition-all text-xs sm:text-sm text-center">
-                                        Voir détails
+                                        <?= htmlspecialchars(__('requests_list.view_details'), ENT_QUOTES, 'UTF-8') ?>
                                     </a>
                                 </div>
                             <?php endif; ?>

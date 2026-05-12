@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 session_start();
 require_once 'config.php';
+require_once __DIR__ . '/i18n.php';
+gntoma_init_locale_from_request();
 
 // Vérification de session
 if (!isset($_SESSION['user_id'])) {
@@ -82,11 +84,11 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $request = $request_stmt->fetch();
             
             if (!$request) {
-                throw new RuntimeException("Cette demande n'existe pas.");
+                throw new RuntimeException(__('request_approve.err_not_found'));
             }
             
             if ($request['status'] === 'pending') {
-                throw new RuntimeException("Cette demande est déjà en attente.");
+                throw new RuntimeException(__('request_approve.err_already_pending'));
             }
             
             $update_stmt = $pdo->prepare("
@@ -115,7 +117,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
                     $journal_title = (string) ($request['journal_title'] ?? '');
                     $request_number = (string) ($request['request_number'] ?? '');
 
-                    $content = "Votre demande d'accès au journal {$journal_title} ({$request_number}) a été réactivée et est de nouveau en attente.";
+                    $content = __('request_approve.inbox_reactivated', ['title' => $journal_title, 'number' => $request_number]);
                     $preview = trim(substr((string) $content, 0, 100));
 
                     $thread_stmt = $pdo->prepare("
@@ -160,16 +162,16 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
                 }
                 
                 $pdo->commit();
-                $success = "Demande réactivée avec succès ! Elle est maintenant en attente. Le demandeur a été notifié.";
+                $success = __('request_approve.success_reactivated');
             } else {
-                throw new RuntimeException("Impossible de réactiver cette demande.");
+                throw new RuntimeException(__('request_approve.err_reactivate_failed'));
             }
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
             }
             error_log("Erreur réactivation demande : " . $e->getMessage());
-            $error = $e instanceof RuntimeException ? $e->getMessage() : "Erreur lors de la réactivation de la demande.";
+            $error = $e instanceof RuntimeException ? $e->getMessage() : __('request_approve.err_reactivate_generic');
             
             $fallback_stmt = $pdo->prepare("
                 SELECT ar.*, j.title as journal_title, j.cover_image, j.price, j.price_currency,
@@ -203,7 +205,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $request = $request_stmt->fetch();
 
             if (!$request) {
-                throw new RuntimeException("Cette demande a déjà été traitée ou n'existe pas.");
+                throw new RuntimeException(__('request_approve.err_already_processed'));
             }
 
             $update_stmt = $pdo->prepare("
@@ -247,13 +249,13 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
                     $request_number = (string) ($request['request_number'] ?? '');
 
                     $base_content = $new_status === 'approved'
-                        ? "Votre demande d'accès au journal {$journal_title} ({$request_number}) a été approuvée. Vous pouvez maintenant lire le journal."
-                        : "Votre demande d'accès au journal {$journal_title} ({$request_number}) a été refusée.";
+                        ? __('request_approve.inbox_approved', ['title' => $journal_title, 'number' => $request_number])
+                        : __('request_approve.inbox_rejected', ['title' => $journal_title, 'number' => $request_number]);
 
                     $content = $base_content;
                     $response_message_trim = trim((string) ($response_message ?? ''));
                     if ($response_message_trim !== '') {
-                        $content .= "\n\nRéponse de l'auteur : " . $response_message_trim;
+                        $content .= "\n\n" . __('request_approve.author_reply_prefix') . ' ' . $response_message_trim;
                     }
                     $preview = trim(substr((string) $base_content, 0, 100));
 
@@ -300,17 +302,17 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
                 $pdo->commit();
                 $success = $action === 'approve'
-                    ? "Demande approuvée avec succès ! Le demandeur a été notifié et dispose maintenant d'un accès permanent à votre journal."
-                    : "Demande refusée. Le demandeur a été notifié.";
+                    ? __('request_approve.success_approved')
+                    : __('request_approve.success_rejected');
             } else {
-                throw new RuntimeException("Cette demande a déjà été traitée ou n'existe pas.");
+                throw new RuntimeException(__('request_approve.err_already_processed'));
             }
         } catch (Throwable $e) {
             if ($pdo->inTransaction()) {
                 $pdo->rollBack();
             }
             error_log("Erreur mise à jour demande : " . $e->getMessage());
-            $error = $e instanceof RuntimeException ? $e->getMessage() : "Erreur lors du traitement de la demande.";
+            $error = $e instanceof RuntimeException ? $e->getMessage() : __('request_approve.err_process');
 
             $fallback_stmt = $pdo->prepare("
                 SELECT ar.*, j.title as journal_title, j.cover_image, j.price, j.price_currency,
@@ -331,13 +333,20 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 if ($request) {
     $journal_code = $author_code . 'J' . $request['journal_num'];
 }
+
+$pageTitle = $isViewMode
+    ? __('request_approve.title_view')
+    : ($action === 'approve' ? __('request_approve.title_approve') : __('request_approve.title_reject'));
+$mainHeading = $isViewMode
+    ? __('request_approve.heading_view')
+    : ($action === 'approve' ? __('request_approve.heading_approve') : __('request_approve.heading_reject'));
 ?>
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="<?= htmlspecialchars(gntoma_html_lang(), ENT_QUOTES, 'UTF-8') ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GNTOMA - <?= $isViewMode ? 'Voir' : ($action === 'approve' ? 'Approuver' : 'Refuser') ?> la Demande</title>
+    <title><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8') ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script>
@@ -380,6 +389,9 @@ if ($request) {
 
     <div class="max-w-lg mx-auto">
         <div class="glass-panel rounded-[2.5rem] p-8">
+            <div class="flex justify-end mb-4">
+                <?= gntoma_lang_switch_markup() ?>
+            </div>
             
             <div class="text-center mb-8">
                 <div class="w-16 h-16 <?= $isViewMode ? 'bg-blue-100' : ($action === 'approve' ? 'bg-green-100' : 'bg-red-100') ?> rounded-full flex items-center justify-center mx-auto mb-4">
@@ -395,7 +407,7 @@ if ($request) {
                     </svg>
                 </div>
                 <h1 class="text-2xl font-black text-dark mb-2">
-                    <?= $isViewMode ? 'Détail de la Demande' : ($action === 'approve' ? 'Approuver la Demande' : 'Refuser la Demande') ?>
+                    <?= htmlspecialchars($mainHeading, ENT_QUOTES, 'UTF-8') ?>
                 </h1>
             </div>
 
@@ -412,7 +424,7 @@ if ($request) {
                 </div>
                 <div class="text-center">
                     <a href="journal_requests_list.php" class="inline-block bg-dark text-white font-bold py-3 px-8 rounded-2xl hover:bg-black transition-all">
-                        Voir toutes les demandes
+                        <?= htmlspecialchars(__('request_approve.see_all_requests'), ENT_QUOTES, 'UTF-8') ?>
                     </a>
                 </div>
             <?php elseif ($request): ?>
@@ -423,26 +435,35 @@ if ($request) {
                             <span class="text-lg font-black"><?= preg_replace('/[^0-9]/', '', $request['request_number']) ?></span>
                         </div>
                         <div>
-                            <p class="text-sm text-gray-500">Demande de</p>
+                            <p class="text-sm text-gray-500"><?= htmlspecialchars(__('request_approve.request_from'), ENT_QUOTES, 'UTF-8') ?></p>
                             <p class="font-bold text-dark"><?= htmlspecialchars($request['first_name'] . ' ' . $request['last_name']) ?></p>
-                            <p class="text-sm text-gray-600">pour <span class="font-medium"><?= htmlspecialchars($request['journal_title']) ?></span></p>
+                            <p class="text-sm text-gray-600"><?= htmlspecialchars(__('request_approve.for_journal'), ENT_QUOTES, 'UTF-8') ?> <span class="font-medium"><?= htmlspecialchars($request['journal_title']) ?></span></p>
                             <p class="text-xs text-primary font-bold"><?= $journal_code ?></p>
-                            <p class="mt-2 text-xs font-bold uppercase tracking-wider <?= ($request['status'] ?? '') === 'approved' ? 'text-green-600' : (($request['status'] ?? '') === 'rejected' ? 'text-red-600' : 'text-orange-600') ?>">
-                                Statut : <?= htmlspecialchars((string) $request['status']) ?>
+                            <?php
+                            $rawStatus = (string) ($request['status'] ?? '');
+                            $statusLabel = match ($rawStatus) {
+                                'pending' => __('request_approve.status_pending'),
+                                'approved' => __('request_approve.status_approved'),
+                                'rejected' => __('request_approve.status_rejected'),
+                                default => $rawStatus,
+                            };
+                            ?>
+                            <p class="mt-2 text-xs font-bold uppercase tracking-wider <?= $rawStatus === 'approved' ? 'text-green-600' : ($rawStatus === 'rejected' ? 'text-red-600' : 'text-orange-600') ?>">
+                                <?= htmlspecialchars(__('request_approve.status_label'), ENT_QUOTES, 'UTF-8') ?> : <?= htmlspecialchars($statusLabel, ENT_QUOTES, 'UTF-8') ?>
                             </p>
                         </div>
                     </div>
                     
                     <?php if (!empty($request['message'])): ?>
                         <div class="mt-3 p-3 bg-white rounded-xl border border-gray-200">
-                            <p class="text-xs text-gray-500 uppercase font-bold mb-1">Message du demandeur</p>
+                            <p class="text-xs text-gray-500 uppercase font-bold mb-1"><?= htmlspecialchars(__('request_approve.requester_message'), ENT_QUOTES, 'UTF-8') ?></p>
                             <p class="text-sm italic">"<?= htmlspecialchars($request['message']) ?>"</p>
                         </div>
                     <?php endif; ?>
 
                     <?php if (!empty($request['response_message'])): ?>
                         <div class="mt-3 p-3 bg-blue-50 rounded-xl border border-blue-200">
-                            <p class="text-xs text-blue-500 uppercase font-bold mb-1">Votre réponse</p>
+                            <p class="text-xs text-blue-500 uppercase font-bold mb-1"><?= htmlspecialchars(__('request_approve.your_reply_label'), ENT_QUOTES, 'UTF-8') ?></p>
                             <p class="text-sm italic">"<?= htmlspecialchars($request['response_message']) ?>"</p>
                         </div>
                     <?php endif; ?>
@@ -454,7 +475,7 @@ if ($request) {
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                     </svg>
-                    Discuter avec <?= htmlspecialchars($request['first_name']) ?>
+                    <?= htmlspecialchars(__('request_approve.chat_with'), ENT_QUOTES, 'UTF-8') ?> <?= htmlspecialchars($request['first_name']) ?>
                 </a>
 
                 <?php if (!$isViewMode): ?>
@@ -468,8 +489,8 @@ if ($request) {
                             </svg>
                         </div>
                         <div>
-                            <p class="text-sm font-bold text-amber-900 mb-1">Vérifiez avant d'approuver</p>
-                            <p class="text-xs text-amber-800">Sur GNTOMA, l'abonnement et les crédits messages se paient déjà en ligne (FlexPay). Pour l'accès à ce journal payant, le montant affiché en USD se règle en général entre vous et le lecteur (messagerie, Mobile Money, etc.) : vérifiez que vous êtes d'accord avant d'approuver. Une fois approuvée, le demandeur aura un accès permanent au contenu.</p>
+                            <p class="text-sm font-bold text-amber-900 mb-1"><?= htmlspecialchars(__('request_approve.approve_warning_title'), ENT_QUOTES, 'UTF-8') ?></p>
+                            <p class="text-xs text-amber-800"><?= htmlspecialchars(__('request_approve.approve_warning_body'), ENT_QUOTES, 'UTF-8') ?></p>
                         </div>
                     </div>
                 </div>
@@ -480,27 +501,27 @@ if ($request) {
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                     </svg>
-                    <span>Discuter avec le demandeur d'abord</span>
+                    <span><?= htmlspecialchars(__('request_approve.chat_first'), ENT_QUOTES, 'UTF-8') ?></span>
                 </a>
                 <?php endif; ?>
 
                 <form method="POST" class="space-y-6">
                     <div class="space-y-2">
                         <label class="text-xs font-black uppercase tracking-widest text-gray-400 ml-2">
-                            Message de réponse (optionnel)
+                            <?= htmlspecialchars(__('request_approve.response_optional'), ENT_QUOTES, 'UTF-8') ?>
                         </label>
                         <textarea name="response_message" rows="3" 
-                                  placeholder="<?= $action === 'approve' ? 'Merci pour votre paiement, profitez bien du journal !' : 'Désolé, je n\'ai pas reçu le paiement attendu...' ?>" 
+                                  placeholder="<?= htmlspecialchars($action === 'approve' ? __('request_approve.placeholder_approve') : __('request_approve.placeholder_reject'), ENT_QUOTES, 'UTF-8') ?>" 
                                   class="w-full input-lucide rounded-2xl py-4 px-6 font-medium text-dark placeholder-gray-300 resize-none"></textarea>
                     </div>
 
                     <div class="flex space-x-3">
                         <a href="journal_requests_list.php" class="flex-1 bg-gray-200 text-dark font-bold py-4 rounded-2xl hover:bg-gray-300 transition-all text-center">
-                            Annuler
+                            <?= htmlspecialchars(__('common.cancel'), ENT_QUOTES, 'UTF-8') ?>
                         </a>
                         <button type="submit" 
                                 class="flex-1 <?= $action === 'approve' ? 'bg-green-500 hover:bg-green-600 shadow-lg shadow-green-500/30' : 'bg-red-500 hover:bg-red-600' ?> text-white font-bold py-4 rounded-2xl transition-all">
-                            <?= $action === 'approve' ? '✓ Confirmer l\'accès' : '✗ Refuser' ?>
+                            <?= htmlspecialchars($action === 'approve' ? __('request_approve.confirm_access') : __('request_approve.reject_btn'), ENT_QUOTES, 'UTF-8') ?>
                         </button>
                     </div>
                 </form>
@@ -508,19 +529,19 @@ if ($request) {
                 <!-- Mode Vue : options selon statut -->
                 <?php if ($request['status'] === 'rejected'): ?>
                     <div class="bg-orange-50 border border-orange-200 rounded-2xl p-4 mb-5">
-                        <p class="text-sm font-bold text-orange-900 mb-2">Cette demande a été refusée</p>
-                        <p class="text-xs text-orange-800">Vous pouvez la réactiver pour la remettre en attente et permettre au demandeur de faire une nouvelle tentative.</p>
+                        <p class="text-sm font-bold text-orange-900 mb-2"><?= htmlspecialchars(__('request_approve.rejected_banner_title'), ENT_QUOTES, 'UTF-8') ?></p>
+                        <p class="text-xs text-orange-800"><?= htmlspecialchars(__('request_approve.rejected_banner_body'), ENT_QUOTES, 'UTF-8') ?></p>
                     </div>
                     <div class="flex space-x-3 mb-5">
                         <a href="journal_request_approve.php?id=<?= $request['id'] ?>&action=reactivate" 
                            class="flex-1 bg-orange-500 text-white font-bold py-4 rounded-2xl hover:bg-orange-600 transition-all text-center shadow-md shadow-orange-500/30">
-                            ↻ Réactiver la demande
+                            <?= htmlspecialchars(__('request_approve.reactivate_btn'), ENT_QUOTES, 'UTF-8') ?>
                         </a>
                     </div>
                 <?php endif; ?>
                 <div class="flex space-x-3">
                     <a href="journal_requests_list.php" class="flex-1 bg-dark text-white font-bold py-4 rounded-2xl transition-all text-center">
-                        Retour aux demandes
+                        <?= htmlspecialchars(__('request_approve.back_to_requests'), ENT_QUOTES, 'UTF-8') ?>
                     </a>
                 </div>
                 <?php endif; ?>

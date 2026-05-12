@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 session_start();
 require_once 'config.php';
+require_once __DIR__ . '/i18n.php';
+gntoma_init_locale_from_request();
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../index.php");
@@ -81,11 +83,11 @@ $success = $_GET['success'] ?? null;
 $error = $_GET['error'] ?? null;
 ?>
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="<?= htmlspecialchars(gntoma_html_lang(), ENT_QUOTES, 'UTF-8') ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Utilisateurs Bloqués - GNTOMA</title>
+    <title><?= htmlspecialchars(__('messages_blocked.page_title'), ENT_QUOTES, 'UTF-8') ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
@@ -107,14 +109,14 @@ $error = $_GET['error'] ?? null;
     
     <!-- Header -->
     <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-4 py-4">
-        <div class="max-w-2xl mx-auto flex items-center justify-between">
+        <div class="max-w-2xl mx-auto flex items-center justify-between gap-2">
             <a href="messages_list.php" class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center hover:bg-gray-200 transition-all">
                 <svg class="h-5 w-5 text-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
                 </svg>
             </a>
-            <h1 class="text-lg font-bold text-dark">Bloqués</h1>
-            <div class="w-10"></div>
+            <h1 class="text-lg font-bold text-dark flex-1 text-center"><?= htmlspecialchars(__('messages_blocked.heading'), ENT_QUOTES, 'UTF-8') ?></h1>
+            <div class="flex-shrink-0"><?= gntoma_lang_switch_markup() ?></div>
         </div>
     </header>
 
@@ -122,34 +124,34 @@ $error = $_GET['error'] ?? null;
 
         <?php if ($success === 'blocked'): ?>
         <div class="bg-green-50 border border-green-200 rounded-2xl p-4">
-            <p class="text-sm font-bold text-green-700 text-center">Utilisateur bloqué avec succès</p>
+            <p class="text-sm font-bold text-green-700 text-center"><?= htmlspecialchars(__('messages_blocked.success_blocked'), ENT_QUOTES, 'UTF-8') ?></p>
         </div>
         <?php elseif ($success === 'unblocked'): ?>
         <div class="bg-blue-50 border border-blue-200 rounded-2xl p-4">
-            <p class="text-sm font-bold text-blue-700 text-center">Utilisateur débloqué</p>
+            <p class="text-sm font-bold text-blue-700 text-center"><?= htmlspecialchars(__('messages_blocked.success_unblocked'), ENT_QUOTES, 'UTF-8') ?></p>
         </div>
         <?php elseif ($error === 'user_not_found'): ?>
         <div class="bg-red-50 border border-red-200 rounded-2xl p-4">
-            <p class="text-sm font-bold text-red-700 text-center">Utilisateur non trouvé</p>
+            <p class="text-sm font-bold text-red-700 text-center"><?= htmlspecialchars(__('messages_blocked.err_not_found'), ENT_QUOTES, 'UTF-8') ?></p>
         </div>
         <?php endif; ?>
 
         <!-- Ajouter un blocage -->
         <div class="glass-panel rounded-[2rem] p-5">
-            <h2 class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Bloquer un utilisateur</h2>
+            <h2 class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4"><?= htmlspecialchars(__('messages_blocked.block_section'), ENT_QUOTES, 'UTF-8') ?></h2>
             
             <form method="POST" class="space-y-4">
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Code utilisateur</label>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('messages_blocked.user_code'), ENT_QUOTES, 'UTF-8') ?></label>
                     <input type="text" name="block_code" required
-                           placeholder="Ex: A3, B12..."
+                           placeholder="<?= htmlspecialchars(__('messages_blocked.user_code_placeholder'), ENT_QUOTES, 'UTF-8') ?>"
                            class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm uppercase focus:ring-2 focus:ring-red-500 outline-none">
                 </div>
                 
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Raison (optionnel)</label>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('messages_blocked.reason_optional'), ENT_QUOTES, 'UTF-8') ?></label>
                     <input type="text" name="reason"
-                           placeholder="Pourquoi bloquer ?"
+                           placeholder="<?= htmlspecialchars(__('messages_blocked.reason_placeholder'), ENT_QUOTES, 'UTF-8') ?>"
                            class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-red-500 outline-none">
                 </div>
                 
@@ -157,14 +159,14 @@ $error = $_GET['error'] ?? null;
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                     </svg>
-                    <span>Bloquer</span>
+                    <span><?= htmlspecialchars(__('messages_blocked.block_btn'), ENT_QUOTES, 'UTF-8') ?></span>
                 </button>
             </form>
         </div>
 
         <!-- Liste des bloqués -->
         <div class="glass-panel rounded-[2rem] p-5">
-            <h2 class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4">Utilisateurs bloqués (<?= count($blocked_users) ?>)</h2>
+            <h2 class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4"><?= htmlspecialchars(__('messages_blocked.list_title', ['count' => (string) count($blocked_users)]), ENT_QUOTES, 'UTF-8') ?></h2>
             
             <?php if (empty($blocked_users)): ?>
             <div class="text-center py-8">
@@ -173,8 +175,8 @@ $error = $_GET['error'] ?? null;
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 </div>
-                <p class="text-gray-500 text-sm">Aucun utilisateur bloqué</p>
-                <p class="text-gray-400 text-xs mt-1">Vous ne recevrez pas de messages des utilisateurs bloqués</p>
+                <p class="text-gray-500 text-sm"><?= htmlspecialchars(__('messages_blocked.empty'), ENT_QUOTES, 'UTF-8') ?></p>
+                <p class="text-gray-400 text-xs mt-1"><?= htmlspecialchars(__('messages_blocked.empty_hint'), ENT_QUOTES, 'UTF-8') ?></p>
             </div>
             <?php else: ?>
             <div class="space-y-3">
@@ -198,7 +200,7 @@ $error = $_GET['error'] ?? null;
                     <form method="POST" class="ml-2">
                         <input type="hidden" name="unblock_code" value="<?= $blocked['blocked_user_code'] ?>">
                         <button type="submit" class="text-xs font-bold text-primary hover:text-blue-600 py-1 px-3 bg-blue-50 rounded-lg">
-                            Débloquer
+                            <?= htmlspecialchars(__('messages_blocked.unblock'), ENT_QUOTES, 'UTF-8') ?>
                         </button>
                     </form>
                 </div>

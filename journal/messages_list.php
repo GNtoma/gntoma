@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 session_start();
 require_once 'config.php';
+require_once __DIR__ . '/i18n.php';
+gntoma_init_locale_from_request();
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../index.php");
@@ -78,11 +80,11 @@ try {
 $success = $_GET['success'] ?? null;
 ?>
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="<?= htmlspecialchars(gntoma_html_lang(), ENT_QUOTES, 'UTF-8') ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Messagerie - GNTOMA</title>
+    <title><?= htmlspecialchars(__('messages_list.page_title'), ENT_QUOTES, 'UTF-8') ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
@@ -121,13 +123,13 @@ $success = $_GET['success'] ?? null;
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
                 </svg>
             </a>
-            <div class="text-center">
-                <h1 class="text-lg font-bold text-dark">Messages</h1>
+            <div class="text-center flex-1">
+                <h1 class="text-lg font-bold text-dark"><?= htmlspecialchars(__('messages_list.heading'), ENT_QUOTES, 'UTF-8') ?></h1>
                 <?php if ($total_unread > 0): ?>
-                <span class="text-[10px] text-primary font-bold"><?= $total_unread ?> non lu<?= $total_unread > 1 ? 's' : '' ?></span>
+                <span class="text-[10px] text-primary font-bold"><?= htmlspecialchars($total_unread === 1 ? __('messages_list.unread_one', ['n' => (string) $total_unread]) : __('messages_list.unread_many', ['n' => (string) $total_unread]), ENT_QUOTES, 'UTF-8') ?></span>
                 <?php endif; ?>
             </div>
-            <div class="w-10"></div>
+            <div class="flex-shrink-0"><?= gntoma_lang_switch_markup() ?></div>
         </div>
     </header>
 
@@ -135,7 +137,7 @@ $success = $_GET['success'] ?? null;
         
         <?php if ($success === 'sent'): ?>
         <div class="bg-green-50 border border-green-200 rounded-2xl p-4 animate__animated animate__bounceIn">
-            <p class="text-sm font-bold text-green-700 text-center">Message envoyé !</p>
+            <p class="text-sm font-bold text-green-700 text-center"><?= htmlspecialchars(__('messages_list.sent_success'), ENT_QUOTES, 'UTF-8') ?></p>
         </div>
         <?php endif; ?>
 
@@ -148,12 +150,12 @@ $success = $_GET['success'] ?? null;
                     </svg>
                 </div>
                 <div>
-                    <p class="text-xs text-gray-500 font-bold uppercase">Crédits Messages</p>
+                    <p class="text-xs text-gray-500 font-bold uppercase"><?= htmlspecialchars(__('messages_list.credits_label'), ENT_QUOTES, 'UTF-8') ?></p>
                     <p class="text-2xl font-black text-dark"><?= number_format($credits['remaining_credits'] ?? 0) ?></p>
                 </div>
             </div>
             <a href="messages_buy.php" class="bg-primary text-white font-bold py-2 px-4 rounded-xl text-sm hover:bg-blue-600 transition-all">
-                + Acheter
+                <?= htmlspecialchars(__('messages_list.buy'), ENT_QUOTES, 'UTF-8') ?>
             </a>
         </div>
 
@@ -163,19 +165,19 @@ $success = $_GET['success'] ?? null;
                 <svg class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
                 </svg>
-                <span class="font-bold text-dark text-sm">Nouveau</span>
+                <span class="font-bold text-dark text-sm"><?= htmlspecialchars(__('messages_list.new'), ENT_QUOTES, 'UTF-8') ?></span>
             </a>
             <a href="message_bulk.php" class="glass-panel rounded-2xl p-4 flex items-center justify-center space-x-2 hover:bg-white transition-all">
                 <svg class="h-5 w-5 text-orange-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
                 </svg>
-                <span class="font-bold text-dark text-sm">Groupe (50)</span>
+                <span class="font-bold text-dark text-sm"><?= htmlspecialchars(__('messages_list.group_50'), ENT_QUOTES, 'UTF-8') ?></span>
             </a>
         </div>
 
         <!-- Liste des conversations -->
         <div class="glass-panel rounded-[2rem] p-4">
-            <h2 class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4 px-2">Conversations</h2>
+            <h2 class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4 px-2"><?= htmlspecialchars(__('messages_list.conversations'), ENT_QUOTES, 'UTF-8') ?></h2>
             
             <?php if (empty($threads)): ?>
             <div class="text-center py-12">
@@ -184,8 +186,8 @@ $success = $_GET['success'] ?? null;
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                     </svg>
                 </div>
-                <p class="text-gray-500 font-medium">Aucune conversation</p>
-                <p class="text-gray-400 text-sm mt-1">Commencez à discuter avec d'autres membres</p>
+                <p class="text-gray-500 font-medium"><?= htmlspecialchars(__('messages_list.empty'), ENT_QUOTES, 'UTF-8') ?></p>
+                <p class="text-gray-400 text-sm mt-1"><?= htmlspecialchars(__('messages_list.empty_hint'), ENT_QUOTES, 'UTF-8') ?></p>
             </div>
             <?php else: ?>
             <div class="space-y-2">
@@ -214,7 +216,7 @@ $success = $_GET['success'] ?? null;
                             <?php endif; ?>
                         </div>
                         <p class="text-xs text-gray-500 message-preview <?= ($thread['unread_count'] ?? 0) > 0 ? 'font-semibold text-gray-700' : '' ?>">
-                            <?= htmlspecialchars($thread['last_message_preview'] ?? 'Nouvelle conversation') ?>
+                            <?= htmlspecialchars($thread['last_message_preview'] ?? __('messages_list.new_thread_preview'), ENT_QUOTES, 'UTF-8') ?>
                         </p>
                     </div>
                 </a>
@@ -229,13 +231,13 @@ $success = $_GET['success'] ?? null;
                 <svg class="h-5 w-5 text-red-500 mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
                 </svg>
-                <span class="text-xs font-bold text-gray-600">Bloqués</span>
+                <span class="text-xs font-bold text-gray-600"><?= htmlspecialchars(__('messages_list.blocked'), ENT_QUOTES, 'UTF-8') ?></span>
             </a>
             <a href="messages_filters.php" class="flex-1 glass-panel rounded-2xl p-3 text-center hover:bg-white transition-all">
                 <svg class="h-5 w-5 text-green-500 mx-auto mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                 </svg>
-                <span class="text-xs font-bold text-gray-600">Filtres</span>
+                <span class="text-xs font-bold text-gray-600"><?= htmlspecialchars(__('messages_list.filters'), ENT_QUOTES, 'UTF-8') ?></span>
             </a>
         </div>
 

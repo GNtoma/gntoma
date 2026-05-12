@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 session_start();
 require_once 'config.php';
+require_once __DIR__ . '/i18n.php';
+gntoma_init_locale_from_request();
 
 // Vérification de session
 if (!isset($_SESSION['user_id'])) {
@@ -84,11 +86,11 @@ if ($current_page < 1 || $current_page > $page_count) {
 $active_page = $pages[$current_page - 1] ?? $pages[0];
 ?>
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="<?= htmlspecialchars(gntoma_html_lang(), ENT_QUOTES, 'UTF-8') ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GNTOMA - Éditer <?php echo htmlspecialchars($journal['title']); ?></title>
+    <title><?= htmlspecialchars(__('journal_edit.page_title', ['title' => (string) $journal['title']]), ENT_QUOTES, 'UTF-8') ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" rel="stylesheet">
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
@@ -174,11 +176,11 @@ $active_page = $pages[$current_page - 1] ?? $pages[0];
                     <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                     </svg>
-                    <span class="font-bold text-sm">Retour</span>
+                    <span class="font-bold text-sm"><?= htmlspecialchars(__('common.back'), ENT_QUOTES, 'UTF-8') ?></span>
                 </a>
                 <h1 class="font-black text-lg text-dark truncate max-w-xs"><?php echo htmlspecialchars($journal['title']); ?></h1>
                 <div class="flex items-center space-x-2">
-                    <span class="text-xs font-bold text-gray-400">Page <?php echo $current_page; ?>/<?php echo $page_count; ?></span>
+                    <span class="text-xs font-bold text-gray-400"><?= htmlspecialchars(__('journal_nav.page_short', ['current' => (string) $current_page, 'total' => (string) $page_count]), ENT_QUOTES, 'UTF-8') ?></span>
                 </div>
             </div>
         </div>
@@ -192,45 +194,46 @@ $active_page = $pages[$current_page - 1] ?? $pages[0];
             <div class="flex items-center space-x-2">
                 <button onclick="addTextBlock()" class="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-gray-50 transition-all flex items-center space-x-2">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" /></svg>
-                    <span>Texte</span>
+                    <span><?= htmlspecialchars(__('journal_edit.toolbar_text'), ENT_QUOTES, 'UTF-8') ?></span>
                 </button>
                 <label class="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-xl text-xs font-bold hover:bg-gray-50 transition-all flex items-center space-x-2 cursor-pointer">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                    <span>Image</span>
+                    <span><?= htmlspecialchars(__('journal_edit.toolbar_image'), ENT_QUOTES, 'UTF-8') ?></span>
                     <input type="file" id="image-upload" accept="image/*" class="hidden" onchange="uploadImage(this)">
                 </label>
             </div>
             
-            <div class="flex items-center space-x-2">
-                <button onclick="savePage()" class="bg-primary text-white px-6 py-2 rounded-xl text-xs font-bold hover:opacity-90 transition-all flex items-center space-x-2">
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
-                    <span>Sauvegarder</span>
-                </button>
-            </div>
+                <div class="flex items-center gap-2">
+                    <span class="flex-shrink-0"><?= gntoma_lang_switch_markup() ?></span>
+                    <button onclick="savePage()" class="bg-primary text-white px-6 py-2 rounded-xl text-xs font-bold hover:opacity-90 transition-all flex items-center space-x-2">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>
+                        <span><?= htmlspecialchars(__('common.save'), ENT_QUOTES, 'UTF-8') ?></span>
+                    </button>
+                </div>
         </div>
 
         <!-- Page Navigation intelligente -->
         <div class="bg-white rounded-2xl border border-gray-100 p-3 sm:p-4 mb-6">
             <div class="flex flex-wrap items-center justify-between gap-3">
                 <p class="text-xs font-black uppercase tracking-widest text-gray-400">
-                    Navigation pages (<?= $current_page ?>/<?= $page_count ?>)
+                    <?= htmlspecialchars(__('journal_nav.nav_pages_title', ['current' => (string) $current_page, 'total' => (string) $page_count]), ENT_QUOTES, 'UTF-8') ?>
                 </p>
                 <form method="GET" class="flex items-center gap-2">
                     <input type="hidden" name="id" value="<?= (int)$journal_id ?>">
-                    <label for="goto-editor-page" class="text-xs font-bold text-gray-500">Aller a</label>
+                    <label for="goto-editor-page" class="text-xs font-bold text-gray-500"><?= htmlspecialchars(__('journal_nav.go_to'), ENT_QUOTES, 'UTF-8') ?></label>
                     <input id="goto-editor-page" name="page" type="number" min="1" max="<?= $page_count ?>" value="<?= $current_page ?>"
                            class="w-20 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-sm font-bold text-center focus:ring-2 focus:ring-primary outline-none">
-                    <button type="submit" class="bg-primary text-white text-xs font-black px-4 py-2 rounded-xl hover:opacity-90 transition-all">OK</button>
+                    <button type="submit" class="bg-primary text-white text-xs font-black px-4 py-2 rounded-xl hover:opacity-90 transition-all"><?= htmlspecialchars(__('common.ok'), ENT_QUOTES, 'UTF-8') ?></button>
                 </form>
             </div>
 
             <div class="mt-3 flex items-center justify-between gap-2">
                 <?php if ($current_page > 1): ?>
                 <a href="?id=<?= (int)$journal_id ?>&page=<?= $current_page - 1 ?>" class="bg-white border border-gray-200 text-dark text-xs font-bold px-4 py-2 rounded-xl hover:bg-gray-50 transition-all">
-                    ← Precedent
+                    <?= htmlspecialchars(__('journal_nav.previous'), ENT_QUOTES, 'UTF-8') ?>
                 </a>
                 <?php else: ?>
-                <span class="bg-gray-100 text-gray-400 text-xs font-bold px-4 py-2 rounded-xl">← Precedent</span>
+                <span class="bg-gray-100 text-gray-400 text-xs font-bold px-4 py-2 rounded-xl"><?= htmlspecialchars(__('journal_nav.previous'), ENT_QUOTES, 'UTF-8') ?></span>
                 <?php endif; ?>
 
                 <div class="hidden md:flex items-center gap-1">
@@ -258,17 +261,17 @@ $active_page = $pages[$current_page - 1] ?? $pages[0];
                 <div class="flex items-center gap-2">
                     <form action="journal_page_add_14.php" method="POST" class="inline">
                         <input type="hidden" name="journal_id" value="<?= (int)$journal_id ?>">
-                        <button type="submit" class="w-10 h-10 rounded-xl bg-green-500 text-white flex items-center justify-center hover:bg-green-600 transition-all" title="Ajouter une page">
+                        <button type="submit" class="w-10 h-10 rounded-xl bg-green-500 text-white flex items-center justify-center hover:bg-green-600 transition-all" title="<?= htmlspecialchars(__('journal_nav.add_page_btn_title'), ENT_QUOTES, 'UTF-8') ?>">
                             <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                         </button>
                     </form>
 
                     <?php if ($current_page < $page_count): ?>
                     <a href="?id=<?= (int)$journal_id ?>&page=<?= $current_page + 1 ?>" class="bg-primary text-white text-xs font-bold px-4 py-2 rounded-xl hover:opacity-90 transition-all">
-                        Suivant →
+                        <?= htmlspecialchars(__('journal_nav.next'), ENT_QUOTES, 'UTF-8') ?>
                     </a>
                     <?php else: ?>
-                    <span class="bg-gray-100 text-gray-400 text-xs font-bold px-4 py-2 rounded-xl">Suivant →</span>
+                    <span class="bg-gray-100 text-gray-400 text-xs font-bold px-4 py-2 rounded-xl"><?= htmlspecialchars(__('journal_nav.next'), ENT_QUOTES, 'UTF-8') ?></span>
                     <?php endif; ?>
                 </div>
             </div>
@@ -281,7 +284,7 @@ $active_page = $pages[$current_page - 1] ?? $pages[0];
                 <input type="text" id="page-title" 
                        value="<?php echo htmlspecialchars($active_page['title'] ?? 'Page ' . $current_page); ?>"
                        class="w-full text-xl font-black text-dark border-0 outline-none placeholder-gray-300"
-                       placeholder="Titre de la page...">
+                       placeholder="<?= htmlspecialchars(__('journal_nav.page_title_placeholder'), ENT_QUOTES, 'UTF-8') ?>">
             </div>
             
             <!-- Content Area -->
@@ -289,7 +292,7 @@ $active_page = $pages[$current_page - 1] ?? $pages[0];
                 <?php if (!empty($active_page['content'])): ?>
                     <?php echo $active_page['content']; ?>
                 <?php else: ?>
-                    <div class="content-block text-gray-600 leading-relaxed" contenteditable="true" placeholder="Commencez à écrire ici...">
+                    <div class="content-block text-gray-600 leading-relaxed" contenteditable="true" placeholder="<?= htmlspecialchars(__('journal_nav.start_writing_placeholder'), ENT_QUOTES, 'UTF-8') ?>">
                         <p class="mb-4"></p>
                     </div>
                 <?php endif; ?>
@@ -301,12 +304,12 @@ $active_page = $pages[$current_page - 1] ?? $pages[0];
             <div class="flex items-center space-x-2">
                 <?php if ($page_count > 1): ?>
                     <form action="journal_page_delete_15.php" method="POST" 
-                          onsubmit="return confirm('Supprimer cette page ? Cette action est irréversible.');">
+                          onsubmit="return confirm(<?= json_encode(__('journal_edit.js_delete_page_confirm'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>);">
                         <input type="hidden" name="page_id" value="<?php echo $active_page['id']; ?>">
                         <input type="hidden" name="journal_id" value="<?php echo $journal_id; ?>">
                         <button type="submit" class="text-red-500 hover:text-red-600 text-xs font-bold flex items-center space-x-1">
                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                            <span>Supprimer cette page</span>
+                            <span><?= htmlspecialchars(__('journal_edit.delete_this_page'), ENT_QUOTES, 'UTF-8') ?></span>
                         </button>
                     </form>
                 <?php endif; ?>
@@ -316,7 +319,7 @@ $active_page = $pages[$current_page - 1] ?? $pages[0];
                     <svg class="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span class="text-xs font-bold text-dark"><?php echo $years_left; ?> ans restants</span>
+                    <span class="text-xs font-bold text-dark"><?= htmlspecialchars(__('journal_nav.years_left', ['years' => (string) $years_left]), ENT_QUOTES, 'UTF-8') ?></span>
                 </div>
                 
                 <!-- Bouton Supprimer Journal (si autorisé) -->
@@ -326,7 +329,7 @@ $active_page = $pages[$current_page - 1] ?? $pages[0];
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
-                        <span>Supprimer le journal</span>
+                        <span><?= htmlspecialchars(__('journal_edit.delete_journal'), ENT_QUOTES, 'UTF-8') ?></span>
                     </a>
                 <?php endif; ?>
             </div>
@@ -342,7 +345,7 @@ $active_page = $pages[$current_page - 1] ?? $pages[0];
                     <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                     </svg>
-                    <span>Ajouter une page</span>
+                    <span><?= htmlspecialchars(__('journal_nav.add_page'), ENT_QUOTES, 'UTF-8') ?></span>
                 </button>
             </form>
         </div>
@@ -355,7 +358,7 @@ $active_page = $pages[$current_page - 1] ?? $pages[0];
             const newBlock = document.createElement('div');
             newBlock.className = 'content-block text-gray-600 leading-relaxed mt-4';
             newBlock.contentEditable = true;
-            newBlock.placeholder = 'Nouveau paragraphe...';
+            newBlock.placeholder = <?= json_encode(__('journal_nav.new_paragraph_placeholder'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>;
             newBlock.innerHTML = '<p class="mb-4"><br></p>';
             contentArea.appendChild(newBlock);
             newBlock.focus();
@@ -380,14 +383,14 @@ $active_page = $pages[$current_page - 1] ?? $pages[0];
                         imgContainer.className = 'my-4';
                         imgContainer.innerHTML = '<img src="' + data.path + '" alt="" class="max-w-full rounded-xl shadow-lg">';
                         contentArea.appendChild(imgContainer);
-                        showStatus('Image ajoutée');
+                        showStatus(<?= json_encode(__('journal_edit.js_image_added'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>);
                     } else {
-                        alert('Erreur: ' + data.error);
+                        alert(String(<?= json_encode(__('journal_edit.js_upload_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>).replace(':error', String(data.error)));
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Erreur lors de l\'upload');
+                    alert(<?= json_encode(__('journal_edit.js_upload_failed'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>);
                 });
             }
         }
@@ -409,14 +412,14 @@ $active_page = $pages[$current_page - 1] ?? $pages[0];
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showStatus('Sauvegardé !');
+                    showStatus(<?= json_encode(__('journal_edit.saved'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>);
                 } else {
-                    showStatus('Erreur de sauvegarde');
+                    showStatus(<?= json_encode(__('journal_edit.save_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>);
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                showStatus('Erreur de sauvegarde');
+                showStatus(<?= json_encode(__('journal_edit.save_error'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>);
             });
         }
 

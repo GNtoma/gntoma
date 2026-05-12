@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 session_start();
 require_once 'config.php';
+require_once __DIR__ . '/i18n.php';
+gntoma_init_locale_from_request();
 
 // Vérification de session
 if (!isset($_SESSION['user_id'])) {
@@ -25,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $journal_num = (int)($_POST['journal_number'] ?? 0);
     
     if ($journal_num <= 0) {
-        $error = "Veuillez entrer un numéro de journal valide.";
+        $error = __('journal_go.err_invalid');
     } else {
         // Construire le code journal
         $target_journal_code = $user_code . 'J' . $journal_num;
@@ -48,11 +50,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 header("Location: journal_edit_13.php?id=" . $journal['id']);
                 exit;
             } else {
-                $error = "Le journal J{$journal_num} n'existe pas. Vous avez " . getJournalCount($pdo, $user_code) . " journal(s).";
+                $error = __('journal_go.err_not_found', [
+                    'num' => (string) $journal_num,
+                    'total' => (string) getJournalCount($pdo, $user_code),
+                ]);
             }
         } catch (PDOException $e) {
             error_log("Erreur accès direct journal : " . $e->getMessage());
-            $error = "Erreur lors de la recherche du journal.";
+            $error = __('journal_go.err_search');
         }
     }
 }
@@ -70,11 +75,11 @@ function getJournalCount($pdo, $user_code): int {
 $total_journals = getJournalCount($pdo, $user_code);
 ?>
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="<?= htmlspecialchars(gntoma_html_lang(), ENT_QUOTES, 'UTF-8') ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GNTOMA - Accès Direct au Journal</title>
+    <title><?= htmlspecialchars(__('journal_go.page_title'), ENT_QUOTES, 'UTF-8') ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script>
@@ -98,10 +103,11 @@ $total_journals = getJournalCount($pdo, $user_code);
 
     <div class="max-w-md w-full">
         <div class="glass-panel rounded-[2.5rem] p-8">
+            <div class="flex justify-end mb-2"><?= gntoma_lang_switch_markup() ?></div>
             <div class="text-center mb-8">
-                <h1 class="text-2xl font-black text-dark mb-2">Accès Direct</h1>
-                <p class="text-gray-500 text-sm">Allez directement à votre journal N°...</p>
-                <p class="text-xs text-gray-400 mt-1">Vous avez <?= $total_journals ?> journal(s)</p>
+                <h1 class="text-2xl font-black text-dark mb-2"><?= htmlspecialchars(__('journal_go.heading'), ENT_QUOTES, 'UTF-8') ?></h1>
+                <p class="text-gray-500 text-sm"><?= htmlspecialchars(__('journal_go.sub'), ENT_QUOTES, 'UTF-8') ?></p>
+                <p class="text-xs text-gray-400 mt-1"><?= htmlspecialchars(__('journal_go.you_have', ['count' => (string) $total_journals]), ENT_QUOTES, 'UTF-8') ?></p>
             </div>
 
             <?php if ($error): ?>
@@ -112,24 +118,24 @@ $total_journals = getJournalCount($pdo, $user_code);
 
             <form method="POST" class="space-y-6">
                 <div class="space-y-2">
-                    <label class="text-xs font-black uppercase tracking-widest text-gray-400 ml-2">Numéro du journal</label>
+                    <label class="text-xs font-black uppercase tracking-widest text-gray-400 ml-2"><?= htmlspecialchars(__('journal_go.label_number'), ENT_QUOTES, 'UTF-8') ?></label>
                     <div class="flex items-center space-x-3">
                         <span class="text-lg font-bold text-gray-500"><?= $user_code ?>J</span>
                         <input type="number" name="journal_number" min="1" required 
-                               placeholder="10, 20, 50..." 
+                               placeholder="<?= htmlspecialchars(__('journal_go.placeholder_num'), ENT_QUOTES, 'UTF-8') ?>" 
                                class="flex-1 input-lucide rounded-2xl py-4 px-6 font-bold text-lg text-dark placeholder-gray-300">
                     </div>
-                    <p class="text-xs text-gray-400 ml-2">Ex: Tapez "10" pour aller à <?= $user_code ?>J10</p>
+                    <p class="text-xs text-gray-400 ml-2"><?= htmlspecialchars(__('journal_go.hint_example', ['code' => (string) $user_code]), ENT_QUOTES, 'UTF-8') ?></p>
                 </div>
 
                 <button type="submit" class="w-full bg-dark text-white font-bold py-4 rounded-2xl shadow-xl hover:bg-black transition-all">
-                    Aller au journal
+                    <?= htmlspecialchars(__('journal_go.submit'), ENT_QUOTES, 'UTF-8') ?>
                 </button>
             </form>
 
             <div class="mt-6 text-center">
                 <a href="dashboard_6.php" class="text-sm font-bold text-primary hover:underline">
-                    ← Retour au tableau de bord
+                    <?= htmlspecialchars(__('journal_go.back_dashboard'), ENT_QUOTES, 'UTF-8') ?>
                 </a>
             </div>
         </div>

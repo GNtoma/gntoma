@@ -9,6 +9,9 @@ declare(strict_types=1);
 
 session_start();
 require_once 'config.php';
+require_once __DIR__ . '/message_chat_queries.php';
+require_once __DIR__ . '/i18n.php';
+gntoma_init_locale_from_request();
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../index.php");
@@ -69,16 +72,7 @@ try {
     $remaining_credits = $credits['remaining_credits'] ?? 0;
 
     // Récupérer les messages
-    $messages_stmt = $pdo->prepare("
-        SELECT m.*,
-            CASE WHEN m.sender_user_code = ? THEN 'me' ELSE 'other' END as sender_type
-        FROM messages m
-        WHERE m.thread_id = ?
-        ORDER BY m.created_at ASC
-        LIMIT 100
-    ");
-    $messages_stmt->execute([$user_code, $thread_id]);
-    $messages = $messages_stmt->fetchAll();
+    $messages = gntoma_fetch_chat_messages($pdo, $user_code, $thread_id);
 
     // Marquer les messages comme lus
     $pdo->prepare("
@@ -96,7 +90,7 @@ try {
 $error = $_GET['error'] ?? null;
 ?>
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="<?= htmlspecialchars(gntoma_html_lang(), ENT_QUOTES, 'UTF-8') ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -117,12 +111,10 @@ $error = $_GET['error'] ?? null;
     <style>
         body { 
             font-family: 'Outfit', sans-serif; 
-            background-color: #f8fafc;
-            background-image: 
-                radial-gradient(at 10% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
-                radial-gradient(at 90% 10%, rgba(249, 115, 22, 0.08) 0px, transparent 50%),
-                radial-gradient(at 90% 90%, rgba(168, 85, 247, 0.08) 0px, transparent 50%),
-                radial-gradient(at 10% 90%, rgba(59, 130, 246, 0.08) 0px, transparent 50%);
+            background-color: #e8e6df;
+            background-image:
+                radial-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+            background-size: 12px 12px;
             background-attachment: fixed;
             -webkit-font-smoothing: antialiased;
         }
@@ -139,6 +131,17 @@ $error = $_GET['error'] ?? null;
         }
         .chat-container {
             scroll-behavior: smooth;
+            background-color: rgba(248, 246, 240, 0.92);
+            background-image:
+                radial-gradient(rgba(0, 0, 0, 0.035) 1px, transparent 1px);
+            background-size: 12px 12px;
+        }
+        @keyframes chatBubbleRowIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .chat-bubble-row {
+            animation: chatBubbleRowIn 0.22s ease-out both;
         }
     </style>
 </head>
@@ -146,31 +149,34 @@ $error = $_GET['error'] ?? null;
     
     <!-- Header -->
     <header class="bg-white/90 backdrop-blur-xl border-b border-gray-100 px-4 py-3 flex-shrink-0">
-        <div class="max-w-2xl mx-auto flex items-center justify-between">
-            <a href="messages_list.php" class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center hover:bg-gray-200 transition-all">
+        <div class="max-w-2xl mx-auto flex items-center justify-between gap-2">
+            <a href="messages_list.php" class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center hover:bg-gray-200 transition-all flex-shrink-0">
                 <svg class="h-5 w-5 text-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
                 </svg>
             </a>
             
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-3 flex-1 min-w-0 justify-center">
                 <?php 
                 $profile_pic = !empty($thread['other_profile_pic']) ? '../' . $thread['other_profile_pic'] : '../images/user_default.png';
                 ?>
                 <img src="<?= htmlspecialchars($profile_pic) ?>" alt="" class="w-10 h-10 rounded-xl object-cover border border-gray-100">
-                <div>
-                    <h1 class="font-bold text-dark text-sm">
+                <div class="min-w-0 text-center sm:text-left">
+                    <h1 class="font-bold text-dark text-sm truncate">
                         <?= htmlspecialchars($thread['other_first_name'] . ' ' . $thread['other_last_name']) ?>
                     </h1>
-                    <p class="text-[10px] text-gray-400 font-medium"><?= $thread['other_user_code'] ?></p>
+                    <p class="text-[10px] text-gray-400 font-medium"><?= htmlspecialchars((string) $thread['other_user_code'], ENT_QUOTES, 'UTF-8') ?></p>
                 </div>
             </div>
             
-            <a href="search_code.php?code=<?= $thread['other_user_code'] ?>" class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center hover:bg-gray-200 transition-all">
-                <svg class="h-5 w-5 text-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                </svg>
-            </a>
+            <div class="flex items-center gap-1 flex-shrink-0">
+                <?= gntoma_lang_switch_markup() ?>
+                <a href="search_code.php?code=<?= htmlspecialchars((string) $thread['other_user_code'], ENT_QUOTES, 'UTF-8') ?>" class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center hover:bg-gray-200 transition-all">
+                    <svg class="h-5 w-5 text-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                </a>
+            </div>
         </div>
     </header>
 
@@ -178,37 +184,44 @@ $error = $_GET['error'] ?? null;
     <?php if ($remaining_credits < 1): ?>
     <div class="bg-red-50 border-b border-red-100 px-4 py-2 flex-shrink-0">
         <div class="max-w-2xl mx-auto flex items-center justify-between">
-            <p class="text-xs text-red-600 font-bold">Crédits insuffisants</p>
-            <a href="messages_buy.php" class="text-xs bg-red-500 text-white px-3 py-1 rounded-lg font-bold">Recharger</a>
+            <p class="text-xs text-red-600 font-bold"><?= htmlspecialchars(__('message_chat.low_credits'), ENT_QUOTES, 'UTF-8') ?></p>
+            <a href="messages_buy.php" class="text-xs bg-red-500 text-white px-3 py-1 rounded-lg font-bold"><?= htmlspecialchars(__('message_chat.recharge'), ENT_QUOTES, 'UTF-8') ?></a>
         </div>
     </div>
     <?php endif; ?>
 
-    <!-- Messages -->
+    <!-- Messages : rendu serveur immédiat, puis rafraîchissement périodique -->
     <div class="flex-1 overflow-y-auto px-3 sm:px-4 py-4 chat-container" id="chat-container"
          hx-get="message_chat_partial.php?thread=<?= (int)$thread_id ?>"
-         hx-trigger="load, every 4s"
+         hx-trigger="every 4s"
          hx-target="#chat-container"
          hx-swap="innerHTML">
+        <?php require __DIR__ . '/message_chat_bubbles.php'; ?>
     </div>
 
     <!-- Formulaire d'envoi -->
     <?php if (!$is_blocked && $remaining_credits >= 1): ?>
     <div class="bg-white/95 backdrop-blur-xl border-t border-gray-100 px-3 sm:px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex-shrink-0">
         <div class="max-w-2xl mx-auto">
+            <div id="chat-send-feedback"></div>
             <?php if ($error === 'blocked'): ?>
             <div class="bg-red-50 text-red-600 text-sm font-bold py-3 px-4 rounded-xl text-center mb-3">
-                Cet utilisateur vous a bloqué
+                <?= htmlspecialchars(__('message_chat.blocked_by_other'), ENT_QUOTES, 'UTF-8') ?>
             </div>
             <?php endif; ?>
             
-            <form id="chat-send-form" action="message_send_process.php" method="POST" enctype="multipart/form-data" class="flex items-end space-x-2">
+            <form id="chat-send-form" method="POST" enctype="multipart/form-data"
+                  hx-post="message_send_process.php"
+                  hx-target="#chat-container"
+                  hx-swap="innerHTML"
+                  hx-encoding="multipart/form-data"
+                  class="flex items-end space-x-2">
                 <input type="hidden" name="thread_id" value="<?= $thread_id ?>">
                 <input type="hidden" name="recipient_code" value="<?= htmlspecialchars($other_user_code) ?>">
                 
                 <div class="flex-1 bg-gray-100 rounded-2xl flex items-end border border-gray-200 focus-within:ring-2 focus-within:ring-primary/30">
                     <textarea name="content" rows="1" 
-                              placeholder="Votre message..." 
+                              placeholder="<?= htmlspecialchars(__('message_chat.placeholder'), ENT_QUOTES, 'UTF-8') ?>" 
                               class="flex-1 bg-transparent px-4 py-3 text-sm outline-none resize-none max-h-40 min-h-[44px]"
                               oninput="this.style.height = ''; this.style.height = this.scrollHeight + 'px'"
                               required></textarea>
@@ -243,8 +256,8 @@ $error = $_GET['error'] ?? null;
     </div>
     <?php elseif ($is_blocked): ?>
     <div class="bg-red-50 border-t border-red-100 px-4 py-4 text-center flex-shrink-0">
-        <p class="text-red-600 font-bold text-sm">Vous avez bloqué cet utilisateur</p>
-        <a href="messages_blocked.php" class="text-xs text-primary font-bold mt-1 inline-block">Gérer les blocages</a>
+        <p class="text-red-600 font-bold text-sm"><?= htmlspecialchars(__('message_chat.you_blocked'), ENT_QUOTES, 'UTF-8') ?></p>
+        <a href="messages_blocked.php" class="text-xs text-primary font-bold mt-1 inline-block"><?= htmlspecialchars(__('message_chat.manage_blocks'), ENT_QUOTES, 'UTF-8') ?></a>
     </div>
     <?php endif; ?>
 
@@ -255,8 +268,23 @@ $error = $_GET['error'] ?? null;
         }
 
         document.body.addEventListener('htmx:beforeRequest', function(evt) {
-            if (evt.target && evt.target.id === 'chat-container') {
-                evt.target.dataset.shouldAutoscroll = isNearBottom(evt.target) ? '1' : '0';
+            const chat = document.getElementById('chat-container');
+            if (!chat) return;
+            const fromPoll = evt.target && evt.target.id === 'chat-container';
+            const fromSend = evt.target && evt.target.id === 'chat-send-form';
+            if (fromPoll || fromSend) {
+                chat.dataset.shouldAutoscroll = isNearBottom(chat) ? '1' : '0';
+            }
+            if (fromSend) {
+                const btn = document.getElementById('send-button');
+                if (btn) btn.disabled = true;
+            }
+        });
+
+        document.body.addEventListener('htmx:afterRequest', function(evt) {
+            if (evt.target && evt.target.id === 'chat-send-form') {
+                const btn = document.getElementById('send-button');
+                if (btn) btn.disabled = false;
             }
         });
 
@@ -265,11 +293,30 @@ $error = $_GET['error'] ?? null;
                 if (evt.target.dataset.shouldAutoscroll !== '0') {
                     evt.target.scrollTop = evt.target.scrollHeight;
                 }
+                const cfg = evt.detail && evt.detail.requestConfig;
+                const xhr = evt.detail && evt.detail.xhr;
+                const isPost = (cfg && cfg.verb === 'post')
+                    || (xhr && xhr.method && xhr.method.toUpperCase() === 'POST');
+                if (isPost) {
+                    const form = document.getElementById('chat-send-form');
+                    if (form) {
+                        form.reset();
+                        const ta = form.querySelector('textarea[name="content"]');
+                        if (ta) {
+                            ta.style.height = '';
+                        }
+                        const fileInput = form.querySelector('input[name="attachment"]');
+                        if (fileInput) fileInput.value = '';
+                        const preview = document.getElementById('image-preview');
+                        if (preview) preview.classList.add('hidden');
+                        const previewImg = document.getElementById('preview-img');
+                        if (previewImg) previewImg.src = '';
+                    }
+                }
             }
         });
 
         const sendForm = document.getElementById('chat-send-form');
-        const sendButton = document.getElementById('send-button');
         const contentTextarea = sendForm ? sendForm.querySelector('textarea[name="content"]') : null;
 
         if (contentTextarea) {
@@ -281,11 +328,12 @@ $error = $_GET['error'] ?? null;
             });
         }
 
-        if (sendForm && sendButton) {
-            sendForm.addEventListener('submit', function () {
-                sendButton.disabled = true;
-            });
-        }
+        document.addEventListener('DOMContentLoaded', function () {
+            const el = document.getElementById('chat-container');
+            if (el) {
+                el.scrollTop = el.scrollHeight;
+            }
+        });
 
         // Preview image
         function previewImage(input) {

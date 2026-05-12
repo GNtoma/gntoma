@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 session_start();
 require_once 'config.php';
+require_once __DIR__ . '/i18n.php';
+gntoma_init_locale_from_request();
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../index.php");
@@ -123,10 +125,9 @@ try {
     exit;
 }
 
-$mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 ?>
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="<?= htmlspecialchars(gntoma_html_lang(), ENT_QUOTES, 'UTF-8') ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -170,14 +171,14 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
     
     <!-- Header -->
     <header class="sticky top-0 z-50 glass-panel border-b border-gray-100 px-4 py-4">
-        <div class="max-w-2xl mx-auto flex items-center justify-between">
-            <a href="dashboard_6.php" class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center hover:bg-gray-200 transition-all">
+        <div class="max-w-2xl mx-auto flex items-center justify-between gap-2">
+            <a href="dashboard_6.php" class="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center hover:bg-gray-200 transition-all flex-shrink-0">
                 <svg class="h-5 w-5 text-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
                 </svg>
             </a>
-            <h1 class="text-lg font-bold text-dark">Profil Auteur</h1>
-            <div class="w-10"></div>
+            <h1 class="text-lg font-bold text-dark flex-1 text-center"><?= htmlspecialchars(__('search_code.heading'), ENT_QUOTES, 'UTF-8') ?></h1>
+            <div class="flex-shrink-0"><?= gntoma_lang_switch_markup() ?></div>
         </div>
     </header>
 
@@ -187,7 +188,7 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
         <!-- Affichage du journal spécifique recherché -->
         <div class="bg-primary/10 border border-primary/20 rounded-[2rem] p-4">
             <p class="text-sm text-primary font-bold text-center">
-                Journal demandé : <?= htmlspecialchars($code) ?>
+                <?= htmlspecialchars(__('search_code.journal_requested', ['code' => $code]), ENT_QUOTES, 'UTF-8') ?>
             </p>
         </div>
         <?php endif; ?>
@@ -208,7 +209,7 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
                     <h2 class="text-2xl font-black text-dark leading-tight">
                         <?= htmlspecialchars($author['first_name'] . ' ' . $author['last_name']) ?>
                     </h2>
-                    <p class="text-primary font-bold text-sm mt-1"><?= $author['user_code'] ?></p>
+                    <p class="text-primary font-bold text-sm mt-1"><?= htmlspecialchars((string) $author['user_code'], ENT_QUOTES, 'UTF-8') ?></p>
                     
                     <?php if ($author['city'] || $author['country']): ?>
                     <p class="text-gray-500 text-xs mt-2 flex items-center">
@@ -233,15 +234,15 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
             <div class="grid grid-cols-3 gap-3 mt-5 pt-5 border-t border-gray-100">
                 <div class="text-center">
                     <p class="text-2xl font-black text-dark"><?= number_format($author['journal_count']) ?></p>
-                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Journaux</p>
+                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider"><?= htmlspecialchars(__('search_code.stats_journals'), ENT_QUOTES, 'UTF-8') ?></p>
                 </div>
                 <div class="text-center border-x border-gray-100">
                     <p class="text-2xl font-black text-dark"><?= number_format($author['total_views'] ?? 0) ?></p>
-                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Vues</p>
+                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider"><?= htmlspecialchars(__('search_code.stats_views'), ENT_QUOTES, 'UTF-8') ?></p>
                 </div>
                 <div class="text-center">
                     <p class="text-2xl font-black text-primary"><?= count($journals) ?></p>
-                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider">Publics</p>
+                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wider"><?= htmlspecialchars(__('search_code.stats_public'), ENT_QUOTES, 'UTF-8') ?></p>
                 </div>
             </div>
 
@@ -250,7 +251,7 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
                 <?php if ($author['user_code'] !== $current_user_code): ?>
                     <?php if ($is_blocked): ?>
                     <button disabled class="flex-1 bg-gray-100 text-gray-400 font-bold py-3 rounded-2xl text-sm">
-                        Utilisateur bloqué
+                        <?= htmlspecialchars(__('search_code.user_blocked'), ENT_QUOTES, 'UTF-8') ?>
                     </button>
                     <?php else: ?>
                     <a href="message_send.php?to=<?= $author['user_code'] ?>" 
@@ -258,25 +259,25 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
                         <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                         </svg>
-                        <span>Message</span>
+                        <span><?= htmlspecialchars(__('search_code.message'), ENT_QUOTES, 'UTF-8') ?></span>
                     </a>
                     <?php endif; ?>
                     
                     <?php if ($existing_thread): ?>
                     <a href="message_chat.php?thread=<?= $existing_thread['id'] ?>" 
                        class="flex-1 bg-dark text-white font-bold py-3 rounded-2xl text-sm text-center hover:bg-gray-800 transition-all">
-                        Conversation
+                        <?= htmlspecialchars(__('search_code.conversation'), ENT_QUOTES, 'UTF-8') ?>
                     </a>
                     <?php else: ?>
-                    <button onclick="alert('Envoyez un premier message pour démarrer la conversation')"
+                    <button type="button" onclick="alert(<?= json_encode(__('search_code.first_message_alert'), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP) ?>)"
                             class="flex-1 bg-gray-100 text-gray-600 font-bold py-3 rounded-2xl text-sm">
-                        Pas de messages
+                        <?= htmlspecialchars(__('search_code.no_messages_hint'), ENT_QUOTES, 'UTF-8') ?>
                     </button>
                     <?php endif; ?>
                 <?php else: ?>
                     <a href="profile_edit.php" 
                        class="flex-1 bg-dark text-white font-bold py-3 rounded-2xl text-sm text-center hover:bg-gray-800 transition-all">
-                        Modifier mon profil
+                        <?= htmlspecialchars(__('search_code.edit_profile'), ENT_QUOTES, 'UTF-8') ?>
                     </a>
                 <?php endif; ?>
             </div>
@@ -285,7 +286,7 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
         <!-- Journal spécifique (si recherche A3J2) -->
         <?php if ($specific_journal): ?>
         <div class="space-y-4">
-            <h3 class="text-sm font-black uppercase tracking-widest text-gray-400 ml-2">Journal trouvé</h3>
+            <h3 class="text-sm font-black uppercase tracking-widest text-gray-400 ml-2"><?= htmlspecialchars(__('search_code.journal_found'), ENT_QUOTES, 'UTF-8') ?></h3>
             
             <div class="journal-card rounded-[2.5rem] overflow-hidden shadow-lg">
                 <?php if (!empty($specific_journal['cover_image'])): ?>
@@ -299,7 +300,7 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
                     </div>
                     <div class="absolute top-4 right-4">
                         <span class="px-3 py-1.5 text-xs font-black uppercase tracking-widest rounded-full <?= $specific_journal['status'] === 'paid' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700' ?>">
-                            <?= $specific_journal['status'] === 'paid' ? 'Payant' : 'Public' ?>
+                            <?= htmlspecialchars($specific_journal['status'] === 'paid' ? __('search_code.status_paid') : __('search_code.status_public'), ENT_QUOTES, 'UTF-8') ?>
                         </span>
                     </div>
                 </div>
@@ -312,7 +313,7 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
                             <?= $code ?>
                         </span>
                         <span class="px-3 py-1.5 text-xs font-black uppercase tracking-widest rounded-full <?= $specific_journal['status'] === 'paid' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700' ?>">
-                            <?= $specific_journal['status'] === 'paid' ? 'Payant' : 'Public' ?>
+                            <?= htmlspecialchars($specific_journal['status'] === 'paid' ? __('search_code.status_paid') : __('search_code.status_public'), ENT_QUOTES, 'UTF-8') ?>
                         </span>
                     </div>
                     <?php endif; ?>
@@ -332,18 +333,18 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
                     <div class="flex gap-3">
                         <a href="journal_view.php?id=<?= $specific_journal['id'] ?>" 
                            class="flex-1 bg-primary text-white font-bold py-3 rounded-2xl text-center hover:bg-blue-600 transition-all">
-                            Voir le journal
+                            <?= htmlspecialchars(__('search_code.view_journal'), ENT_QUOTES, 'UTF-8') ?>
                         </a>
                         <?php if ($author['user_code'] !== $current_user_code): ?>
                         <a href="message_send.php?to=<?= $author['user_code'] ?>" 
                            class="flex-1 bg-white border border-gray-200 text-dark font-bold py-3 rounded-2xl text-center hover:bg-gray-50 transition-all">
-                            Écrire à l'auteur
+                            <?= htmlspecialchars(__('search_code.write_author'), ENT_QUOTES, 'UTF-8') ?>
                         </a>
                         <?php endif; ?>
                         <?php if ($specific_journal['status'] === 'paid' && $author['user_code'] !== $current_user_code): ?>
                         <a href="journal_access_request.php?journal_id=<?= $specific_journal['id'] ?>" 
                            class="flex-1 bg-orange-100 text-orange-700 font-bold py-3 rounded-2xl text-center hover:bg-orange-200 transition-all">
-                            Demander l'accès
+                            <?= htmlspecialchars(__('search_code.request_access'), ENT_QUOTES, 'UTF-8') ?>
                         </a>
                         <?php endif; ?>
                     </div>
@@ -356,13 +357,13 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
         <!-- Tous les journaux de l'auteur -->
         <div>
             <h3 class="text-sm font-black uppercase tracking-widest text-gray-400 ml-2 mb-4">
-                <?= $specific_journal ? 'Autres journaux' : 'Journaux publics' ?>
+                <?= htmlspecialchars($specific_journal ? __('search_code.other_journals') : __('search_code.public_journals'), ENT_QUOTES, 'UTF-8') ?>
                 <span class="text-primary">(<?= count($journals) ?>)</span>
             </h3>
             
             <?php if (empty($journals)): ?>
             <div class="bg-yellow-50 border-2 border-dashed border-yellow-200 rounded-[2.5rem] p-8 text-center">
-                <p class="text-gray-500 font-medium">Cet auteur n'a pas encore de journaux publics.</p>
+                <p class="text-gray-500 font-medium"><?= htmlspecialchars(__('search_code.no_public_journals'), ENT_QUOTES, 'UTF-8') ?></p>
             </div>
             <?php else: ?>
             <div class="grid gap-4">
@@ -371,7 +372,8 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
                     
                     $journal_code = $author['user_code'] . 'J' . $journal['journal_num'];
                     $date_obj = new DateTime($journal['created_at']);
-                    $date_formatee = $date_obj->format('d') . ' ' . $mois_fr[(int)$date_obj->format('m') - 1] . ' ' . $date_obj->format('Y');
+                    $monthKey = (string)(int)$date_obj->format('m');
+                    $date_formatee = $date_obj->format('d') . ' ' . __('months.' . $monthKey) . ' ' . $date_obj->format('Y');
                 ?>
                 <?php if ($journal['status'] === 'paid' && $author['user_code'] !== $current_user_code): ?>
                 <!-- Journal payant : carte avec boutons -->
@@ -394,14 +396,14 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
                                     <?= $journal_code ?>
                                 </span>
                                 <span class="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-full bg-orange-100 text-orange-600">
-                                    Payant
+                                    <?= htmlspecialchars(__('search_code.status_paid'), ENT_QUOTES, 'UTF-8') ?>
                                 </span>
                                 <span class="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-full bg-orange-50 text-orange-700 border border-orange-200">
                                     <?= number_format($journal['price'] ?? 0, 0) ?> <?= $journal['price_currency'] ?? 'CDF' ?>
                                 </span>
                             </div>
                             <h4 class="font-bold text-dark text-sm sm:text-base truncate"><?= htmlspecialchars($journal['title']) ?></h4>
-                            <p class="text-xs text-gray-400 mt-1"><?= $date_formatee ?> • <?= number_format($journal['view_count'] ?? 0) ?> vues</p>
+                            <p class="text-xs text-gray-400 mt-1"><?= htmlspecialchars($date_formatee, ENT_QUOTES, 'UTF-8') ?> • <?= number_format($journal['view_count'] ?? 0) ?> <?= htmlspecialchars(__('search_code.views_suffix'), ENT_QUOTES, 'UTF-8') ?></p>
                         </div>
                     </div>
                     
@@ -410,7 +412,7 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                         </svg>
-                        <span>Demander l'accès</span>
+                        <span><?= htmlspecialchars(__('search_code.request_access'), ENT_QUOTES, 'UTF-8') ?></span>
                     </a>
                 </div>
                 <?php else: ?>
@@ -434,11 +436,11 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
                                 <?= $journal_code ?>
                             </span>
                             <span class="px-2 py-0.5 text-[10px] font-black uppercase tracking-wider rounded-full bg-green-100 text-green-700">
-                                Public
+                                <?= htmlspecialchars(__('search_code.status_public'), ENT_QUOTES, 'UTF-8') ?>
                             </span>
                         </div>
                         <h4 class="font-bold text-dark text-sm sm:text-base truncate"><?= htmlspecialchars($journal['title']) ?></h4>
-                        <p class="text-xs text-gray-400 mt-1"><?= $date_formatee ?> • <?= number_format($journal['view_count'] ?? 0) ?> vues</p>
+                        <p class="text-xs text-gray-400 mt-1"><?= htmlspecialchars($date_formatee, ENT_QUOTES, 'UTF-8') ?> • <?= number_format($journal['view_count'] ?? 0) ?> <?= htmlspecialchars(__('search_code.views_suffix'), ENT_QUOTES, 'UTF-8') ?></p>
                     </div>
                     
                     <div class="w-10 h-10 sm:w-12 sm:h-12 bg-primary/10 group-hover:bg-primary text-primary group-hover:text-white rounded-xl flex items-center justify-center transition-all flex-shrink-0">

@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 session_start();
 require_once 'config.php';
+require_once __DIR__ . '/i18n.php';
+gntoma_init_locale_from_request();
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../index.php");
@@ -60,6 +62,8 @@ try {
     $journals_count = 0;
 }
 
+$error = '';
+
 // Traitement du formulaire
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $first_name = trim($_POST['first_name'] ?? '');
@@ -93,18 +97,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header("Location: profile_edit.php?success=updated");
         exit;
     } catch (PDOException $e) {
-        $error = "Erreur lors de la mise à jour";
+        $error = __('profile_edit.err_update');
     }
 }
 
 $success = $_GET['success'] ?? null;
 ?>
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="<?= htmlspecialchars(gntoma_html_lang(), ENT_QUOTES, 'UTF-8') ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mon Profil - GNTOMA</title>
+    <title><?= htmlspecialchars(__('profile_edit.page_title'), ENT_QUOTES, 'UTF-8') ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -173,14 +177,14 @@ $success = $_GET['success'] ?? null;
     
     <!-- Header -->
     <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-3 sm:px-4 py-3 sm:py-4">
-        <div class="max-w-2xl mx-auto flex items-center justify-between">
-            <a href="dashboard_6.php" class="w-9 h-9 sm:w-10 sm:h-10 bg-gray-100 rounded-xl flex items-center justify-center hover:bg-gray-200 transition-all">
+        <div class="max-w-2xl mx-auto flex items-center justify-between gap-2">
+            <a href="dashboard_6.php" class="w-9 h-9 sm:w-10 sm:h-10 bg-gray-100 rounded-xl flex items-center justify-center hover:bg-gray-200 transition-all flex-shrink-0">
                 <svg class="h-4 w-4 sm:h-5 sm:w-5 text-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
                 </svg>
             </a>
-            <h1 class="text-base sm:text-lg font-bold text-dark">Mon Profil</h1>
-            <div class="w-9 sm:w-10"></div>
+            <h1 class="text-base sm:text-lg font-bold text-dark flex-1 text-center"><?= htmlspecialchars(__('profile_edit.heading'), ENT_QUOTES, 'UTF-8') ?></h1>
+            <div class="flex-shrink-0"><?= gntoma_lang_switch_markup() ?></div>
         </div>
     </header>
 
@@ -188,11 +192,11 @@ $success = $_GET['success'] ?? null;
         
         <?php if ($success === 'updated'): ?>
         <div class="bg-green-50 border border-green-200 rounded-2xl p-4">
-            <p class="text-sm font-bold text-green-700 text-center">Profil mis à jour avec succès !</p>
+            <p class="text-sm font-bold text-green-700 text-center"><?= htmlspecialchars(__('profile_edit.success_updated'), ENT_QUOTES, 'UTF-8') ?></p>
         </div>
         <?php elseif ($success === 'photo_updated'): ?>
         <div class="bg-green-50 border border-green-200 rounded-2xl p-4">
-            <p class="text-sm font-bold text-green-700 text-center">Photo de profil mise à jour !</p>
+            <p class="text-sm font-bold text-green-700 text-center"><?= htmlspecialchars(__('profile_edit.success_photo'), ENT_QUOTES, 'UTF-8') ?></p>
         </div>
         <?php endif; ?>
         
@@ -204,15 +208,15 @@ $success = $_GET['success'] ?? null;
 
         <?php if (isset($_GET['error']) && $_GET['error'] === 'upload_failed'): ?>
         <div class="bg-red-50 border border-red-200 rounded-2xl p-4">
-            <p class="text-sm font-bold text-red-700 text-center">Erreur lors de l'upload de la photo</p>
+            <p class="text-sm font-bold text-red-700 text-center"><?= htmlspecialchars(__('profile_edit.err_upload'), ENT_QUOTES, 'UTF-8') ?></p>
         </div>
         <?php elseif (isset($_GET['error']) && $_GET['error'] === 'file_too_large'): ?>
         <div class="bg-red-50 border border-red-200 rounded-2xl p-4">
-            <p class="text-sm font-bold text-red-700 text-center">Image trop grande (max 5 Mo)</p>
+            <p class="text-sm font-bold text-red-700 text-center"><?= htmlspecialchars(__('profile_edit.err_file_large'), ENT_QUOTES, 'UTF-8') ?></p>
         </div>
         <?php elseif (isset($_GET['error']) && $_GET['error'] === 'invalid_type'): ?>
         <div class="bg-red-50 border border-red-200 rounded-2xl p-4">
-            <p class="text-sm font-bold text-red-700 text-center">Format non autorisé (JPG, PNG, GIF, WebP)</p>
+            <p class="text-sm font-bold text-red-700 text-center"><?= htmlspecialchars(__('profile_edit.err_invalid_type'), ENT_QUOTES, 'UTF-8') ?></p>
         </div>
         <?php endif; ?>
 
@@ -220,7 +224,7 @@ $success = $_GET['success'] ?? null;
         <div class="glass-panel rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-6 shadow-sm">
                 <?php $profile_pic = !empty($user['profile_pic']) ? '../' . $user['profile_pic'] : '../images/user_default.png'; ?>
                 <div class="relative">
-                    <img src="<?= htmlspecialchars($profile_pic) ?>" alt="Profil" class="w-16 h-16 sm:w-20 sm:h-20 rounded-[1.25rem] sm:rounded-[1.5rem] border-2 border-white object-cover shadow-md">
+                    <img src="<?= htmlspecialchars($profile_pic) ?>" alt="<?= htmlspecialchars(__('profile_edit.photo_alt'), ENT_QUOTES, 'UTF-8') ?>" class="w-16 h-16 sm:w-20 sm:h-20 rounded-[1.25rem] sm:rounded-[1.5rem] border-2 border-white object-cover shadow-md">
                     <label for="photo" class="absolute -bottom-2 -right-2 bg-primary text-white p-1.5 sm:p-2 rounded-xl cursor-pointer hover:bg-blue-600 transition-all shadow-lg">
                         <svg class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 6H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
@@ -245,15 +249,15 @@ $success = $_GET['success'] ?? null;
             <div class="grid grid-cols-3 gap-3 mt-5 pt-5 border-t border-gray-100">
                 <div class="text-center">
                     <p class="text-lg font-black text-dark"><?= $journals_count ?></p>
-                    <p class="text-[10px] text-gray-400 font-bold uppercase">Journaux</p>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase"><?= htmlspecialchars(__('profile_edit.stats_journals'), ENT_QUOTES, 'UTF-8') ?></p>
                 </div>
                 <div class="text-center">
                     <p class="text-lg font-black text-dark"><?= $threads_count ?></p>
-                    <p class="text-[10px] text-gray-400 font-bold uppercase">Conversations</p>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase"><?= htmlspecialchars(__('profile_edit.stats_threads'), ENT_QUOTES, 'UTF-8') ?></p>
                 </div>
                 <div class="text-center">
                     <p class="text-lg font-black text-primary"><?= number_format($msg_credits['remaining_credits'] ?? 0) ?></p>
-                    <p class="text-[10px] text-gray-400 font-bold uppercase">Crédits msg</p>
+                    <p class="text-[10px] text-gray-400 font-bold uppercase"><?= htmlspecialchars(__('profile_edit.stats_credits'), ENT_QUOTES, 'UTF-8') ?></p>
                 </div>
             </div>
         </div>
@@ -264,9 +268,9 @@ $success = $_GET['success'] ?? null;
                 <svg class="h-4 w-4 sm:h-5 sm:w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                 </svg>
-                <span>Messagerie</span>
+                <span><?= htmlspecialchars(__('profile_edit.messaging'), ENT_QUOTES, 'UTF-8') ?></span>
                 <?php if ($unread_count > 0): ?>
-                <span class="ml-auto bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full"><?= $unread_count ?> non lu<?= $unread_count > 1 ? 's' : '' ?></span>
+                <span class="ml-auto bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded-full"><?= htmlspecialchars($unread_count > 1 ? __('profile_edit.unread_many', ['n' => $unread_count]) : __('profile_edit.unread_one', ['n' => $unread_count]), ENT_QUOTES, 'UTF-8') ?></span>
                 <?php endif; ?>
             </h2>
 
@@ -279,8 +283,8 @@ $success = $_GET['success'] ?? null;
                             </svg>
                         </div>
                         <div>
-                            <p class="font-bold text-dark text-sm">Mes conversations</p>
-                            <p class="text-[10px] text-gray-500"><?= $threads_count ?> conversation<?= $threads_count > 1 ? 's' : '' ?></p>
+                            <p class="font-bold text-dark text-sm"><?= htmlspecialchars(__('profile_edit.my_threads'), ENT_QUOTES, 'UTF-8') ?></p>
+                            <p class="text-[10px] text-gray-500"><?= htmlspecialchars($threads_count > 1 ? __('profile_edit.thread_count_many', ['n' => $threads_count]) : __('profile_edit.thread_count_one', ['n' => $threads_count]), ENT_QUOTES, 'UTF-8') ?></p>
                         </div>
                     </div>
                     <?php if ($unread_count > 0): ?>
@@ -298,8 +302,8 @@ $success = $_GET['success'] ?? null;
                             </svg>
                         </div>
                         <div>
-                            <p class="font-bold text-dark text-sm">Envoyer un message</p>
-                            <p class="text-[10px] text-gray-500">1 crédit par message</p>
+                            <p class="font-bold text-dark text-sm"><?= htmlspecialchars(__('profile_edit.send_message'), ENT_QUOTES, 'UTF-8') ?></p>
+                            <p class="text-[10px] text-gray-500"><?= htmlspecialchars(__('profile_edit.one_credit_each'), ENT_QUOTES, 'UTF-8') ?></p>
                         </div>
                     </div>
                     <svg class="h-5 w-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
@@ -313,8 +317,8 @@ $success = $_GET['success'] ?? null;
                             </svg>
                         </div>
                         <div>
-                            <p class="font-bold text-dark text-sm">Message groupé</p>
-                            <p class="text-[10px] text-gray-500">Filtrer par sexe, ville, âge • 50 crédits</p>
+                            <p class="font-bold text-dark text-sm"><?= htmlspecialchars(__('profile_edit.bulk_message'), ENT_QUOTES, 'UTF-8') ?></p>
+                            <p class="text-[10px] text-gray-500"><?= htmlspecialchars(__('profile_edit.bulk_hint'), ENT_QUOTES, 'UTF-8') ?></p>
                         </div>
                     </div>
                     <svg class="h-5 w-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
@@ -328,8 +332,8 @@ $success = $_GET['success'] ?? null;
                             </svg>
                         </div>
                         <div>
-                            <p class="font-bold text-dark text-sm">Filtrer mes messages</p>
-                            <p class="text-[10px] text-gray-500">Non lus, images, mots-clés</p>
+                            <p class="font-bold text-dark text-sm"><?= htmlspecialchars(__('profile_edit.filter_messages'), ENT_QUOTES, 'UTF-8') ?></p>
+                            <p class="text-[10px] text-gray-500"><?= htmlspecialchars(__('profile_edit.filter_hint'), ENT_QUOTES, 'UTF-8') ?></p>
                         </div>
                     </div>
                     <svg class="h-5 w-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
@@ -339,14 +343,14 @@ $success = $_GET['success'] ?? null;
             <!-- Crédits et achat -->
             <div class="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
                 <div>
-                    <p class="text-xs text-gray-500 font-bold uppercase">Crédits restants</p>
+                    <p class="text-xs text-gray-500 font-bold uppercase"><?= htmlspecialchars(__('profile_edit.credits_remaining'), ENT_QUOTES, 'UTF-8') ?></p>
                     <p class="text-2xl font-black text-dark"><?= number_format($msg_credits['remaining_credits'] ?? 0) ?></p>
                 </div>
                 <a href="messages_buy.php" class="bg-primary text-white font-bold py-2.5 px-5 rounded-xl text-sm hover:bg-blue-600 transition-all flex items-center space-x-2">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
-                    <span>Acheter</span>
+                    <span><?= htmlspecialchars(__('profile_edit.buy'), ENT_QUOTES, 'UTF-8') ?></span>
                 </a>
             </div>
         </div>
@@ -360,18 +364,18 @@ $success = $_GET['success'] ?? null;
                     <svg class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
-                    <span>Identité</span>
+                    <span><?= htmlspecialchars(__('profile_edit.identity'), ENT_QUOTES, 'UTF-8') ?></span>
                 </h2>
                 
                 <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Prénom</label>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('profile_edit.first_name'), ENT_QUOTES, 'UTF-8') ?></label>
                             <input type="text" name="first_name" value="<?= htmlspecialchars($user['first_name'] ?? '') ?>" 
                                    class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Nom</label>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('profile_edit.last_name'), ENT_QUOTES, 'UTF-8') ?></label>
                             <input type="text" name="last_name" value="<?= htmlspecialchars($user['last_name'] ?? '') ?>" 
                                    class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none">
                         </div>
@@ -379,16 +383,16 @@ $success = $_GET['success'] ?? null;
                     
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Sexe</label>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('profile_edit.gender'), ENT_QUOTES, 'UTF-8') ?></label>
                             <select name="gender" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none">
-                                <option value="">Sélectionner</option>
-                                <option value="male" <?= ($user['gender'] ?? '') === 'male' ? 'selected' : '' ?>>Homme</option>
-                                <option value="female" <?= ($user['gender'] ?? '') === 'female' ? 'selected' : '' ?>>Femme</option>
-                                <option value="other" <?= ($user['gender'] ?? '') === 'other' ? 'selected' : '' ?>>Autre</option>
+                                <option value=""><?= htmlspecialchars(__('profile_edit.select'), ENT_QUOTES, 'UTF-8') ?></option>
+                                <option value="male" <?= ($user['gender'] ?? '') === 'male' ? 'selected' : '' ?>><?= htmlspecialchars(__('profile_edit.gender_male'), ENT_QUOTES, 'UTF-8') ?></option>
+                                <option value="female" <?= ($user['gender'] ?? '') === 'female' ? 'selected' : '' ?>><?= htmlspecialchars(__('profile_edit.gender_female'), ENT_QUOTES, 'UTF-8') ?></option>
+                                <option value="other" <?= ($user['gender'] ?? '') === 'other' ? 'selected' : '' ?>><?= htmlspecialchars(__('profile_edit.gender_other'), ENT_QUOTES, 'UTF-8') ?></option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Date de naissance</label>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('profile_edit.birth_date'), ENT_QUOTES, 'UTF-8') ?></label>
                             <input type="date" name="birth_date" value="<?= htmlspecialchars($user['birth_date'] ?? '') ?>" 
                                    class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none">
                         </div>
@@ -403,15 +407,15 @@ $success = $_GET['success'] ?? null;
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                     </svg>
-                    <span>Localisation</span>
+                    <span><?= htmlspecialchars(__('profile_edit.location'), ENT_QUOTES, 'UTF-8') ?></span>
                 </h2>
                 
                 <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
                         <div class="relative">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Ville</label>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('profile_edit.city'), ENT_QUOTES, 'UTF-8') ?></label>
                             <input type="text" name="city" id="city-input" value="<?= htmlspecialchars($user['city'] ?? '') ?>" 
-                                   placeholder="Ex: Paris"
+                                   placeholder="<?= htmlspecialchars(__('profile_edit.city_placeholder'), ENT_QUOTES, 'UTF-8') ?>"
                                    hx-get="geo_autocomplete.php?q={value}&type=city"
                                    hx-trigger="keyup changed delay:300ms"
                                    hx-target="#city-suggestions"
@@ -419,9 +423,9 @@ $success = $_GET['success'] ?? null;
                             <div id="city-suggestions" class="absolute z-10 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-lg hidden max-h-48 overflow-y-auto"></div>
                         </div>
                         <div class="relative">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Commune/Quartier</label>
+                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('profile_edit.commune'), ENT_QUOTES, 'UTF-8') ?></label>
                             <input type="text" name="commune" id="commune-input" value="<?= htmlspecialchars($user['commune'] ?? '') ?>" 
-                                   placeholder="Ex: Le Marais"
+                                   placeholder="<?= htmlspecialchars(__('profile_edit.commune_placeholder'), ENT_QUOTES, 'UTF-8') ?>"
                                    hx-get="geo_autocomplete.php?q={value}&type=commune"
                                    hx-trigger="keyup changed delay:300ms"
                                    hx-target="#commune-suggestions"
@@ -431,7 +435,7 @@ $success = $_GET['success'] ?? null;
                     </div>
                     
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Pays</label>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('profile_edit.country'), ENT_QUOTES, 'UTF-8') ?></label>
                         <input type="text" name="country" value="<?= htmlspecialchars($user['country'] ?? 'RDC') ?>" 
                                class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none">
                     </div>
@@ -444,20 +448,20 @@ $success = $_GET['success'] ?? null;
                     <svg class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
-                    <span>Contact & Bio</span>
+                    <span><?= htmlspecialchars(__('profile_edit.contact_bio'), ENT_QUOTES, 'UTF-8') ?></span>
                 </h2>
                 
                 <div class="space-y-4">
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Téléphone</label>
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('profile_edit.phone'), ENT_QUOTES, 'UTF-8') ?></label>
                         <input type="tel" name="phone" value="<?= htmlspecialchars($user['phone'] ?? '') ?>" 
-                               placeholder="+243..."
+                               placeholder="<?= htmlspecialchars(__('profile_edit.phone_placeholder'), ENT_QUOTES, 'UTF-8') ?>"
                                class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none">
                     </div>
                     
                     <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Biographie</label>
-                        <textarea name="bio" rows="3" placeholder="Décrivez-vous en quelques mots..."
+                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('profile_edit.bio'), ENT_QUOTES, 'UTF-8') ?></label>
+                        <textarea name="bio" rows="3" placeholder="<?= htmlspecialchars(__('profile_edit.bio_placeholder'), ENT_QUOTES, 'UTF-8') ?>"
                                   class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none resize-none"><?= htmlspecialchars($user['bio'] ?? '') ?></textarea>
                     </div>
                 </div>
@@ -469,22 +473,22 @@ $success = $_GET['success'] ?? null;
                     <svg class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                     </svg>
-                    <span>Confidentialité</span>
+                    <span><?= htmlspecialchars(__('profile_edit.privacy'), ENT_QUOTES, 'UTF-8') ?></span>
                 </h2>
                 
                 <div>
-                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2">Visibilité du profil</label>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('profile_edit.visibility'), ENT_QUOTES, 'UTF-8') ?></label>
                     <select name="profile_visibility" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none">
-                        <option value="public" <?= ($user['profile_visibility'] ?? '') === 'public' ? 'selected' : '' ?>>Public - Tout le monde peut voir</option>
-                        <option value="friends" <?= ($user['profile_visibility'] ?? '') === 'friends' ? 'selected' : '' ?>>Amis uniquement</option>
-                        <option value="private" <?= ($user['profile_visibility'] ?? '') === 'private' ? 'selected' : '' ?>>Privé - Personne ne peut voir</option>
+                        <option value="public" <?= ($user['profile_visibility'] ?? '') === 'public' ? 'selected' : '' ?>><?= htmlspecialchars(__('profile_edit.vis_public'), ENT_QUOTES, 'UTF-8') ?></option>
+                        <option value="friends" <?= ($user['profile_visibility'] ?? '') === 'friends' ? 'selected' : '' ?>><?= htmlspecialchars(__('profile_edit.vis_friends'), ENT_QUOTES, 'UTF-8') ?></option>
+                        <option value="private" <?= ($user['profile_visibility'] ?? '') === 'private' ? 'selected' : '' ?>><?= htmlspecialchars(__('profile_edit.vis_private'), ENT_QUOTES, 'UTF-8') ?></option>
                     </select>
                 </div>
             </div>
 
             <!-- Bouton de sauvegarde -->
             <button type="submit" class="w-full bg-primary text-white font-bold py-4 rounded-2xl shadow-lg hover:bg-blue-600 transition-all">
-                Enregistrer les modifications
+                <?= htmlspecialchars(__('profile_edit.save'), ENT_QUOTES, 'UTF-8') ?>
             </button>
             
         </form>

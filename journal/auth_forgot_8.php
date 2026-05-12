@@ -3,24 +3,9 @@ declare(strict_types=1);
 
 session_start();
 require_once 'config.php';
-
-function maskEmailAddress(string $email): string
-{
-    $parts = explode('@', $email, 2);
-    $local = $parts[0] ?? '';
-    $domain = $parts[1] ?? '';
-    $length = strlen($local);
-
-    if ($length <= 1) {
-        $maskedLocal = $local . '....';
-    } elseif ($length <= 4) {
-        $maskedLocal = substr($local, 0, 1) . '....' . substr($local, -1);
-    } else {
-        $maskedLocal = substr($local, 0, 2) . '....' . substr($local, -2);
-    }
-
-    return $domain !== '' ? $maskedLocal . '@' . $domain : $maskedLocal;
-}
+require_once __DIR__ . '/gntoma_email_mask.php';
+require_once __DIR__ . '/i18n.php';
+gntoma_init_locale_from_request();
 
 function sendOtpEmail(string $to, string $name, string $otp): bool
 {
@@ -78,7 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
     }
 
     if (!preg_match('/^[A-Z]\d+$/', $code)) {
-        renderLookupMessage('Format attendu : A56', 'error');
+        renderLookupMessage(htmlspecialchars(__('landing.forgot_lookup_format_err', ['example' => 'A56']), ENT_QUOTES, 'UTF-8'), 'error');
         exit;
     }
 
@@ -88,16 +73,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $user = $stmt->fetch();
 
         if (!$user || empty($user['email'])) {
-            renderLookupMessage('Aucun email lié à ce code utilisateur.', 'error');
+            renderLookupMessage(htmlspecialchars(__('landing.forgot_lookup_no_email'), ENT_QUOTES, 'UTF-8'), 'error');
             exit;
         }
 
-        $maskedEmail = htmlspecialchars(maskEmailAddress((string) $user['email']), ENT_QUOTES, 'UTF-8');
-        renderLookupMessage('Email lié : <span class="text-dark font-black">' . $maskedEmail . '</span>');
+        $maskedEmail = htmlspecialchars(gntoma_mask_email((string) $user['email']), ENT_QUOTES, 'UTF-8');
+        renderLookupMessage(htmlspecialchars(__('landing.email_linked'), ENT_QUOTES, 'UTF-8') . ' <span class="text-dark font-black">' . $maskedEmail . '</span>');
         exit;
     } catch (Throwable $e) {
         error_log('Erreur lookup forgot GNTOMA : ' . $e->getMessage());
-        renderLookupMessage('Une erreur est survenue pendant la recherche.', 'error');
+        renderLookupMessage(htmlspecialchars(__('landing.forgot_lookup_search_err'), ENT_QUOTES, 'UTF-8'), 'error');
         exit;
     }
 }
@@ -110,7 +95,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 $code = strtoupper(trim((string) ($_POST['code'] ?? '')));
 
 if ($code === '' || !preg_match('/^[A-Z]\d+$/', $code)) {
-    header('Location: ../index.php?step=forgot&error=' . urlencode('Code utilisateur invalide.') . '&code=' . urlencode($code));
+    header('Location: ../index.php?step=forgot&error=' . urlencode(__('landing.forgot_err_invalid_code')) . '&code=' . urlencode($code));
     exit;
 }
 
@@ -120,7 +105,7 @@ try {
     $user = $stmt->fetch();
 
     if (!$user || empty($user['email'])) {
-        header('Location: ../index.php?step=forgot&error=' . urlencode('Code utilisateur introuvable.') . '&code=' . urlencode($code));
+        header('Location: ../index.php?step=forgot&error=' . urlencode(__('landing.forgot_err_not_found')) . '&code=' . urlencode($code));
         exit;
     }
 
@@ -131,14 +116,14 @@ try {
     $updateStmt->execute([$otp, $expiresAt, $user['id']]);
 
     if (!sendOtpEmail((string) $user['email'], (string) $user['name'], $otp)) {
-        header('Location: ../index.php?step=forgot&error=' . urlencode('Impossible d\'envoyer le code OTP pour le moment.') . '&code=' . urlencode($code) . '&masked_email=' . urlencode(maskEmailAddress((string) $user['email'])));
+        header('Location: ../index.php?step=forgot&error=' . urlencode(__('landing.forgot_err_mail_send')) . '&code=' . urlencode($code) . '&masked_email=' . urlencode(gntoma_mask_email((string) $user['email'])));
         exit;
     }
 
-    header('Location: ../index.php?step=reset&code=' . urlencode((string) $user['user_code']) . '&masked_email=' . urlencode(maskEmailAddress((string) $user['email'])) . '&success=otp_sent');
+    header('Location: ../index.php?step=reset&code=' . urlencode((string) $user['user_code']) . '&masked_email=' . urlencode(gntoma_mask_email((string) $user['email'])) . '&success=otp_sent');
     exit;
 } catch (Throwable $e) {
     error_log('Erreur forgot GNTOMA : ' . $e->getMessage());
-    header('Location: ../index.php?step=forgot&error=' . urlencode('Une erreur système est survenue.') . '&code=' . urlencode($code));
+    header('Location: ../index.php?step=forgot&error=' . urlencode(__('landing.forgot_err_system')) . '&code=' . urlencode($code));
     exit;
 }

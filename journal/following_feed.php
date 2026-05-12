@@ -9,6 +9,8 @@ declare(strict_types=1);
 
 session_start();
 require_once 'config.php';
+require_once __DIR__ . '/i18n.php';
+gntoma_init_locale_from_request();
 
 if (!isset($_SESSION['user_id'])) {
     header("Location: ../index.php");
@@ -43,14 +45,13 @@ try {
     $remaining_credits = 0;
 }
 
-$mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 ?>
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="<?= htmlspecialchars(gntoma_html_lang(), ENT_QUOTES, 'UTF-8') ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Auteurs suivis - GNTOMA</title>
+    <title><?= htmlspecialchars(__('following_feed.page_title'), ENT_QUOTES, 'UTF-8') ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
@@ -93,14 +94,14 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
     
     <!-- Header -->
     <header class="sticky top-0 z-50 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-3 sm:px-4 py-3 sm:py-4">
-        <div class="max-w-2xl mx-auto flex items-center justify-between">
+        <div class="max-w-2xl mx-auto flex items-center justify-between gap-2">
             <a href="dashboard_6.php" class="w-9 h-9 sm:w-10 sm:h-10 bg-gray-100 rounded-xl flex items-center justify-center hover:bg-gray-200 transition-all">
                 <svg class="h-4 w-4 sm:h-5 sm:w-5 text-dark" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7" />
                 </svg>
             </a>
-            <h1 class="text-base sm:text-lg font-bold text-dark">Auteurs suivis</h1>
-            <div class="w-9 sm:w-10"></div>
+            <h1 class="text-base sm:text-lg font-bold text-dark flex-1 text-center"><?= htmlspecialchars(__('following_feed.heading'), ENT_QUOTES, 'UTF-8') ?></h1>
+            <div class="flex-shrink-0"><?= gntoma_lang_switch_markup() ?></div>
         </div>
     </header>
 
@@ -113,10 +114,10 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                 </svg>
             </div>
-            <h2 class="text-lg sm:text-xl font-black text-dark mb-2">Aucun auteur suivi</h2>
-            <p class="text-gray-500 text-xs sm:text-sm mb-4">Suivez des auteurs pour voir leurs journaux ici</p>
+            <h2 class="text-lg sm:text-xl font-black text-dark mb-2"><?= htmlspecialchars(__('following_feed.empty_title'), ENT_QUOTES, 'UTF-8') ?></h2>
+            <p class="text-gray-500 text-xs sm:text-sm mb-4"><?= htmlspecialchars(__('following_feed.empty_text'), ENT_QUOTES, 'UTF-8') ?></p>
             <a href="search_code.php" class="inline-block bg-primary text-white font-bold py-2.5 sm:py-3 px-5 sm:px-6 rounded-2xl text-xs sm:text-sm hover:bg-blue-600 transition-all">
-                Rechercher des auteurs
+                <?= htmlspecialchars(__('following_feed.cta_search'), ENT_QUOTES, 'UTF-8') ?>
             </a>
         </div>
         <?php else: ?>
@@ -124,7 +125,8 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
         <?php foreach ($follows as $follow): 
             $profile_pic = !empty($follow['profile_pic']) ? '../' . $follow['profile_pic'] : '../images/user_default.png';
             $follow_date = new DateTime($follow['followed_at']);
-            $followed_since = $follow_date->format('d') . ' ' . $mois_fr[(int)$follow_date->format('m') - 1];
+            $monthKey = (string) (int) $follow_date->format('m');
+            $followed_since = $follow_date->format('d') . ' ' . __('months.' . $monthKey);
         ?>
         
         <!-- Carte auteur -->
@@ -137,11 +139,11 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
                     <?php if ($follow['city']): ?>
                     <p class="text-xs text-gray-500 mt-1"><?= htmlspecialchars($follow['city']) ?><?= !empty($follow['country']) ? ', ' . htmlspecialchars($follow['country']) : '' ?></p>
                     <?php endif; ?>
-                    <p class="text-[10px] sm:text-xs text-gray-400 mt-1">Suivi depuis <?= $followed_since ?></p>
+                    <p class="text-[10px] sm:text-xs text-gray-400 mt-1"><?= htmlspecialchars(__('following_feed.followed_since', ['date' => $followed_since]), ENT_QUOTES, 'UTF-8') ?></p>
                 </div>
                 <a href="search_code.php?code=<?= htmlspecialchars($follow['user_code']) ?>" 
                    class="bg-primary text-white font-bold py-2 sm:py-2.5 px-3 sm:px-4 rounded-xl text-xs sm:text-sm hover:bg-blue-600 transition-all flex-shrink-0">
-                    Voir journaux
+                    <?= htmlspecialchars(__('following_feed.view_journals'), ENT_QUOTES, 'UTF-8') ?>
                 </a>
             </div>
         </div>

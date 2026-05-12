@@ -1,7 +1,10 @@
 <?php
 declare(strict_types=1);
+
 session_start();
 require_once 'config.php';
+require_once __DIR__ . '/i18n.php';
+gntoma_init_locale_from_request();
 
 if (!isset($_SESSION['user_id'])) {
     exit;
@@ -15,7 +18,7 @@ if (strlen($target_user) < 2) {
 }
 
 if ($target_user === strtoupper($_SESSION['user_id'])) {
-    echo '<p class="text-[10px] font-bold text-red-500 ml-1">Vous ne pouvez pas vous offrir de jours à vous-même.</p>';
+    echo '<p class="text-[10px] font-bold text-red-500 ml-1">' . htmlspecialchars(__('user_lookup_partial.cannot_self_gift'), ENT_QUOTES, 'UTF-8') . '</p>';
     exit;
 }
 
@@ -23,7 +26,7 @@ try {
     $stmt = $pdo->prepare("SELECT name, first_name, last_name FROM users WHERE UPPER(user_code) = ?");
     $stmt->execute([$target_user]);
     $user = $stmt->fetch();
-    
+
     if ($user) {
         $name = trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? ''));
         if (empty($name)) {
@@ -35,12 +38,12 @@ try {
         echo '<svg class="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg>';
         echo '</div>';
         echo '<div class="min-w-0 flex-1">';
-        echo '<p class="text-[10px] text-green-700 font-bold uppercase tracking-wide">Bénéficiaire trouvé</p>';
+        echo '<p class="text-[10px] text-green-700 font-bold uppercase tracking-wide">' . htmlspecialchars(__('user_lookup_partial.found'), ENT_QUOTES, 'UTF-8') . '</p>';
         echo '<p class="text-xs font-black text-green-900 truncate">' . $safeName . '</p>';
         echo '</div>';
         echo '</div>';
     } else {
-        echo '<p class="text-[10px] font-bold text-red-500 ml-1">Aucun utilisateur trouvé pour ce code.</p>';
+        echo '<p class="text-[10px] font-bold text-red-500 ml-1">' . htmlspecialchars(__('user_lookup_partial.not_found'), ENT_QUOTES, 'UTF-8') . '</p>';
     }
 } catch (Throwable $e) {
     echo '';

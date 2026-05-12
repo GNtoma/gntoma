@@ -2,6 +2,8 @@
 declare(strict_types=1);
 session_start();
 require_once 'config.php';
+require_once __DIR__ . '/i18n.php';
+gntoma_init_locale_from_request();
 
 if (!isset($_SESSION['user_id'])) {
     exit;
@@ -26,7 +28,7 @@ if (preg_match('/^([A-Z]\d+)J(\d+)$/i', $code, $matches)) {
 } else {
     // Si on a commencé à taper autre chose que le format, on ne montre rien de spécial ou une petite erreur
     if (preg_match('/^[A-Z]/i', $code)) {
-        echo '<div class="bg-white/90 backdrop-blur-md rounded-[1.5rem] p-3 shadow-lg border border-gray-100 text-center text-[11px] font-bold text-gray-400 mb-5">Format attendu : A3 ou A3J2</div>';
+        echo '<div class="bg-white/90 backdrop-blur-md rounded-[1.5rem] p-3 shadow-lg border border-gray-100 text-center text-[11px] font-bold text-gray-400 mb-5">' . htmlspecialchars(__('search_code_live_partial.format_hint'), ENT_QUOTES, 'UTF-8') . '</div>';
     }
     exit;
 }
@@ -42,12 +44,10 @@ try {
     $author = $author_stmt->fetch();
 
     if (!$author) {
-        echo '<div class="bg-white/90 backdrop-blur-md rounded-[1.5rem] p-3 shadow-lg border border-gray-100 text-center text-[11px] font-bold text-gray-500 mb-5 animate__animated animate__fadeIn">Aucun auteur trouvé pour le code ' . htmlspecialchars($target_user_code) . '</div>';
+        echo '<div class="bg-white/90 backdrop-blur-md rounded-[1.5rem] p-3 shadow-lg border border-gray-100 text-center text-[11px] font-bold text-gray-500 mb-5 animate__animated animate__fadeIn">' . htmlspecialchars(__('search_code_live_partial.author_not_found', ['code' => $target_user_code]), ENT_QUOTES, 'UTF-8') . '</div>';
         exit;
     }
 
-    $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
-    
     echo '<div class="bg-white/90 backdrop-blur-md rounded-[1.5rem] shadow-lg border border-gray-100 overflow-hidden mb-5 animate__animated animate__fadeIn">';
     
     // Entête de l'auteur
@@ -78,9 +78,9 @@ try {
         $specific_journal = $journal_stmt->fetch();
 
         if (!$specific_journal) {
-            echo '<div class="p-4 text-center text-xs font-bold text-gray-500 bg-gray-50/50">Journal ' . htmlspecialchars($code) . ' introuvable ou privé</div>';
+            echo '<div class="p-4 text-center text-xs font-bold text-gray-500 bg-gray-50/50">' . htmlspecialchars(__('search_code_live_partial.journal_not_found', ['code' => $code]), ENT_QUOTES, 'UTF-8') . '</div>';
         } else {
-            render_journal_item($specific_journal, $author['user_code'], $mois_fr, $code);
+            render_journal_item($specific_journal, $author['user_code'], $code);
         }
     } else {
         $journals_stmt = $pdo->prepare("
@@ -97,13 +97,13 @@ try {
         $journals = $journals_stmt->fetchAll();
 
         if (empty($journals)) {
-            echo '<div class="p-4 text-center text-xs font-bold text-gray-500 bg-gray-50/50">Cet auteur n\'a aucun journal public</div>';
+            echo '<div class="p-4 text-center text-xs font-bold text-gray-500 bg-gray-50/50">' . htmlspecialchars(__('search_code_live_partial.no_public'), ENT_QUOTES, 'UTF-8') . '</div>';
         } else {
             foreach ($journals as $journal) {
-                render_journal_item($journal, $author['user_code'], $mois_fr);
+                render_journal_item($journal, $author['user_code']);
             }
             if (count($journals) >= 5) {
-                echo '<a href="search_code.php?code=' . urlencode($target_user_code) . '" class="block p-2.5 text-center text-[10px] font-black uppercase tracking-widest text-primary hover:bg-gray-50 transition-all bg-gray-50/30 border-t border-gray-100">Voir tous les journaux</a>';
+                echo '<a href="search_code.php?code=' . urlencode($target_user_code) . '" class="block p-2.5 text-center text-[10px] font-black uppercase tracking-widest text-primary hover:bg-gray-50 transition-all bg-gray-50/30 border-t border-gray-100">' . htmlspecialchars(__('search_code_live_partial.see_all'), ENT_QUOTES, 'UTF-8') . '</a>';
             }
         }
     }
@@ -112,13 +112,14 @@ try {
 
 } catch (Throwable $e) {
     error_log("Erreur live search : " . $e->getMessage());
-    echo '<div class="bg-white/90 backdrop-blur-md rounded-[1.5rem] p-3 shadow-lg border border-gray-100 text-center text-xs font-bold text-red-500 mb-5">Erreur de recherche</div>';
+    echo '<div class="bg-white/90 backdrop-blur-md rounded-[1.5rem] p-3 shadow-lg border border-gray-100 text-center text-xs font-bold text-red-500 mb-5">' . htmlspecialchars(__('search_code_live_partial.search_error'), ENT_QUOTES, 'UTF-8') . '</div>';
 }
 
-function render_journal_item($journal, $author_code, $mois_fr, $searched_code = null) {
+function render_journal_item($journal, $author_code, $searched_code = null) {
     $journal_code = $author_code . 'J' . $journal['journal_num'];
     $date_obj = new DateTime($journal['created_at']);
-    $date_formatee = $date_obj->format('d') . ' ' . $mois_fr[(int)$date_obj->format('m') - 1] . ' ' . $date_obj->format('Y');
+    $monthKey = (string) (int) $date_obj->format('m');
+    $date_formatee = $date_obj->format('d') . ' ' . __('months.' . $monthKey) . ' ' . $date_obj->format('Y');
 
     $is_paid = ($journal['status'] === 'paid');
     $price_label = '';
@@ -144,7 +145,7 @@ function render_journal_item($journal, $author_code, $mois_fr, $searched_code = 
         echo '<div class="ml-3 flex-1 min-w-0">';
         echo '<div class="flex items-center flex-wrap gap-1 mb-0.5">';
         echo '<span class="px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded bg-gray-100 text-gray-500">' . $journal_code . '</span>';
-        echo '<span class="px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider rounded bg-green-100 text-green-700">Public</span>';
+        echo '<span class="px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider rounded bg-green-100 text-green-700">' . htmlspecialchars(__('search_code_live_partial.public'), ENT_QUOTES, 'UTF-8') . '</span>';
         echo '</div>';
         echo '<p class="font-bold text-xs text-dark truncate">' . htmlspecialchars($journal['title']) . '</p>';
         echo '</div>';
@@ -177,7 +178,7 @@ function render_journal_item($journal, $author_code, $mois_fr, $searched_code = 
     echo '<div class="flex-1 min-w-0">';
     echo '<div class="flex items-center flex-wrap gap-1 mb-0.5">';
     echo '<span class="px-1.5 py-0.5 text-[9px] font-black uppercase tracking-wider rounded bg-gray-100 text-gray-500">' . $journal_code . '</span>';
-    echo '<span class="px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider rounded bg-orange-100 text-orange-600">Payant</span>';
+    echo '<span class="px-1.5 py-0.5 text-[8px] font-black uppercase tracking-wider rounded bg-orange-100 text-orange-600">' . htmlspecialchars(__('search_code_live_partial.paid'), ENT_QUOTES, 'UTF-8') . '</span>';
     echo $price_label;
     echo '</div>';
     echo '<p class="font-bold text-xs text-dark truncate">' . htmlspecialchars($journal['title']) . '</p>';
@@ -188,7 +189,7 @@ function render_journal_item($journal, $author_code, $mois_fr, $searched_code = 
     echo '<div class="flex gap-1.5">';
     echo '<button type="button" onclick="gntomaOpenAccessModal(' . (int)$journal['id'] . ')" class="flex-1 bg-gradient-to-r from-orange-500 to-amber-500 text-white text-[10px] font-bold py-2 px-3 rounded-lg text-center hover:from-orange-600 hover:to-amber-600 transition-all flex items-center justify-center space-x-1 shadow-sm shadow-orange-500/30">';
     echo '<svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>';
-    echo '<span>Demander l\'accès</span>';
+    echo '<span>' . htmlspecialchars(__('search_code_live_partial.request_access'), ENT_QUOTES, 'UTF-8') . '</span>';
     echo '</button>';
     echo '</div>';
 
@@ -204,11 +205,11 @@ function render_journal_item($journal, $author_code, $mois_fr, $searched_code = 
     }
     echo '</div>';
     echo '<div class="p-5 bg-white/90">';
-    echo '<p class="text-xs text-slate-600 mb-4">Ce journal est prive/premium. Envoyez une demande elegante a l\'auteur avec votre intention, votre projet ou une proposition.</p>';
+    echo '<p class="text-xs text-slate-600 mb-4">' . htmlspecialchars(__('search_code_live_partial.modal_body'), ENT_QUOTES, 'UTF-8') . '</p>';
     echo '<div class="space-y-2">';
-    echo '<a href="journal_access_request.php?journal_id=' . (int)$journal['id'] . '" class="w-full inline-flex justify-center items-center gap-2 bg-orange-500 text-white text-xs font-black py-3 rounded-xl hover:bg-orange-600 transition-all">Continuer la demande</a>';
-    echo '<a href="message_send.php?to=' . urlencode($author_code) . '&context=access_request&journal_id=' . (int)$journal['id'] . '" class="w-full inline-flex justify-center items-center gap-2 bg-blue-50 text-primary text-xs font-black py-3 rounded-xl border border-blue-100 hover:bg-blue-100 transition-all">Discuter avec l\'auteur</a>';
-    echo '<button type="button" onclick="gntomaCloseAccessModal(' . (int)$journal['id'] . ')" class="w-full text-xs font-bold text-slate-500 py-2">Fermer</button>';
+    echo '<a href="journal_access_request.php?journal_id=' . (int)$journal['id'] . '" class="w-full inline-flex justify-center items-center gap-2 bg-orange-500 text-white text-xs font-black py-3 rounded-xl hover:bg-orange-600 transition-all">' . htmlspecialchars(__('search_code_live_partial.continue_request'), ENT_QUOTES, 'UTF-8') . '</a>';
+    echo '<a href="message_send.php?to=' . urlencode($author_code) . '&context=access_request&journal_id=' . (int)$journal['id'] . '" class="w-full inline-flex justify-center items-center gap-2 bg-blue-50 text-primary text-xs font-black py-3 rounded-xl border border-blue-100 hover:bg-blue-100 transition-all">' . htmlspecialchars(__('search_code_live_partial.chat_author'), ENT_QUOTES, 'UTF-8') . '</a>';
+    echo '<button type="button" onclick="gntomaCloseAccessModal(' . (int)$journal['id'] . ')" class="w-full text-xs font-bold text-slate-500 py-2">' . htmlspecialchars(__('search_code_live_partial.close'), ENT_QUOTES, 'UTF-8') . '</button>';
     echo '</div>';
     echo '</div>';
     echo '</div>';

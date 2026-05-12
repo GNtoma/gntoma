@@ -14,25 +14,28 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+require_once __DIR__ . '/i18n.php';
+gntoma_init_locale_from_request();
+
 $error_message = '';
 if (isset($_GET['error'])) {
     switch ($_GET['error']) {
-        case 'empty_fields': $error_message = "Veuillez remplir tous les champs."; break;
-        case 'password_mismatch': $error_message = "Les mots de passe ne correspondent pas."; break;
-        case 'invalid_email': $error_message = "Format d'adresse email invalide."; break;
-        case 'password_too_short': $error_message = "Le mot de passe doit faire au moins 6 caractères."; break;
-        case 'email_exists': $error_message = "Cette adresse email est déjà utilisée."; break;
-        case 'system_error': $error_message = "Une erreur système est survenue. Réessayez."; break;
-        default: $error_message = "Une erreur inattendue s'est produite."; break;
+        case 'empty_fields': $error_message = __('auth_register.err_empty_fields'); break;
+        case 'password_mismatch': $error_message = __('auth_register.err_password_mismatch'); break;
+        case 'invalid_email': $error_message = __('auth_register.err_invalid_email'); break;
+        case 'password_too_short': $error_message = __('auth_register.err_password_too_short'); break;
+        case 'email_exists': $error_message = __('auth_register.err_email_exists'); break;
+        case 'system_error': $error_message = __('auth_register.err_system'); break;
+        default: $error_message = __('auth_register.err_unknown'); break;
     }
 }
 ?>
 <!DOCTYPE html>
-<html lang="fr" class="scroll-smooth">
+<html lang="<?= htmlspecialchars(gntoma_html_lang(), ENT_QUOTES, 'UTF-8') ?>" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GNTOMA - Inscription</title>
+    <title><?= htmlspecialchars(__('auth_register.page_title'), ENT_QUOTES, 'UTF-8') ?></title>
     <?php require_once __DIR__ . '/pwa_head.php'; ?>
     <?php require_once dirname(__DIR__) . '/ui_head.php'; ?>
     
@@ -131,11 +134,11 @@ if (isset($_GET['error'])) {
 
     <div id="register-app" class="w-full max-w-md animate__animated animate__zoomIn animate__faster z-10 mt-12 md:mt-0 gntoma-page-enter">
         <div class="glass-panel-light gntoma-section-shell rounded-[2.5rem] p-8 md:p-10 relative overflow-hidden">
-            
+            <div class="flex justify-end mb-2"><?= gntoma_lang_switch_markup() ?></div>
             <div class="text-center mb-8">
                 <img src="../images/logo.png" alt="GNTOMA Logo" class="h-16 w-auto mx-auto mb-4 drop-shadow-sm hover:scale-105 smooth-transition" onerror="this.style.display='none';">
-                <h2 class="text-2xl font-bold text-dark tracking-tight">Créer un compte</h2>
-                <p class="text-gray-500 text-sm mt-1 font-medium">Rejoignez l'élite de la publication.</p>
+                <h2 class="text-2xl font-bold text-dark tracking-tight"><?= htmlspecialchars(__('auth_register.heading'), ENT_QUOTES, 'UTF-8') ?></h2>
+                <p class="text-gray-500 text-sm mt-1 font-medium"><?= htmlspecialchars(__('auth_register.sub'), ENT_QUOTES, 'UTF-8') ?></p>
             </div>
 
             <?php if ($error_message): ?>
@@ -155,7 +158,7 @@ if (isset($_GET['error'])) {
                             <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" />
                         </svg>
                     </div>
-                    <input type="text" name="name" v-model="form.name" required placeholder="Nom et prénom" class="w-full glass-input-light rounded-2xl py-4 pl-12 pr-4 font-semibold text-sm placeholder-gray-400">
+                    <input type="text" name="name" v-model="form.name" required placeholder="<?= htmlspecialchars(__('auth_register.placeholder_name'), ENT_QUOTES, 'UTF-8') ?>" class="w-full glass-input-light rounded-2xl py-4 pl-12 pr-4 font-semibold text-sm placeholder-gray-400">
                 </div>
 
                 <div class="relative input-group">
@@ -164,7 +167,7 @@ if (isset($_GET['error'])) {
                             <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" /><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                         </svg>
                     </div>
-                    <input type="email" name="email" v-model="form.email" required placeholder="Adresse email" class="w-full glass-input-light rounded-2xl py-4 pl-12 pr-4 font-semibold text-sm placeholder-gray-400">
+                    <input type="email" name="email" v-model="form.email" required placeholder="<?= htmlspecialchars(__('auth_register.placeholder_email'), ENT_QUOTES, 'UTF-8') ?>" class="w-full glass-input-light rounded-2xl py-4 pl-12 pr-4 font-semibold text-sm placeholder-gray-400">
                 </div>
                 
                 <div class="relative input-group">
@@ -173,7 +176,7 @@ if (isset($_GET['error'])) {
                             <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
                         </svg>
                     </div>
-                    <input type="password" name="password" v-model="form.password" required placeholder="Mot de passe (min. 6)" class="w-full glass-input-light rounded-2xl py-4 pl-12 pr-4 font-semibold text-sm placeholder-gray-400">
+                    <input type="password" name="password" v-model="form.password" required placeholder="<?= htmlspecialchars(__('auth_register.placeholder_password'), ENT_QUOTES, 'UTF-8') ?>" class="w-full glass-input-light rounded-2xl py-4 pl-12 pr-4 font-semibold text-sm placeholder-gray-400">
                 </div>
 
                 <div class="relative input-group">
@@ -185,7 +188,7 @@ if (isset($_GET['error'])) {
                             <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
                         </svg>
                     </div>
-                    <input type="password" name="password_confirm" v-model="form.passwordConfirm" required placeholder="Confirmer mot de passe"
+                    <input type="password" name="password_confirm" v-model="form.passwordConfirm" required placeholder="<?= htmlspecialchars(__('auth_register.placeholder_confirm'), ENT_QUOTES, 'UTF-8') ?>"
                            class="w-full glass-input-light rounded-2xl py-4 pl-12 pr-4 font-semibold text-sm placeholder-gray-400 smooth-transition"
                            :class="{'border-red-400 bg-red-50': passwordError, 'border-green-400 bg-green-50': passwordMatch && form.passwordConfirm.length > 0}">
                 </div>
@@ -193,7 +196,7 @@ if (isset($_GET['error'])) {
                 <div class="pt-4">
                     <button type="submit" :disabled="!isFormValid"
                             class="w-full gntoma-dark-button text-white font-bold py-4 rounded-2xl shadow-xl active:scale-95 smooth-transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 group">
-                        <span>S'inscrire</span>
+                        <span><?= htmlspecialchars(__('auth_register.submit'), ENT_QUOTES, 'UTF-8') ?></span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:translate-x-1 smooth-transition" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" />
                         </svg>
@@ -204,8 +207,8 @@ if (isset($_GET['error'])) {
 
         <div class="text-center mt-6">
             <p class="text-dark text-sm font-medium">
-                Déjà membre ? 
-                <a href="../index.php" class="text-primary font-bold hover:underline smooth-transition gntoma-chip px-4 py-2 rounded-full ml-1">Se connecter</a>
+                <?= htmlspecialchars(__('auth_register.already'), ENT_QUOTES, 'UTF-8') ?> 
+                <a href="../index.php" class="text-primary font-bold hover:underline smooth-transition gntoma-chip px-4 py-2 rounded-full ml-1"><?= htmlspecialchars(__('auth_register.login_link'), ENT_QUOTES, 'UTF-8') ?></a>
             </p>
         </div>
     </div>

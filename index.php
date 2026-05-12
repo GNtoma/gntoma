@@ -7,6 +7,9 @@
 
 session_start();
 
+require_once __DIR__ . '/journal/i18n.php';
+gntoma_init_locale_from_request();
+
 // 1. REDIRECTION SI CONNECTÉ
 if (isset($_SESSION['user_id'])) {
     header("Location: journal/dashboard_6.php");
@@ -21,11 +24,11 @@ $error_msg = isset($_GET['error']) ? htmlspecialchars($_GET['error']) : "";
 $success_msg = isset($_GET['success']) ? htmlspecialchars($_GET['success']) : "";
 ?>
 <!DOCTYPE html>
-<html lang="fr" class="scroll-smooth">
+<html lang="<?= htmlspecialchars(gntoma_html_lang(), ENT_QUOTES, 'UTF-8') ?>" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GNTOMA - L'avenir de l'édition privée</title>
+    <title><?= htmlspecialchars(__('landing.page_title'), ENT_QUOTES, 'UTF-8') ?></title>
 
     <?php require_once __DIR__ . '/pwa_head.php'; ?>
     <?php require_once __DIR__ . '/ui_head.php'; ?>
@@ -99,6 +102,9 @@ $success_msg = isset($_GET['success']) ? htmlspecialchars($_GET['success']) : ""
             <div class="order-1 lg:order-2 w-full lg:flex lg:justify-end animate__animated animate__fadeInRight">
                 <div class="glass-panel gntoma-section-shell p-6 md:p-10 rounded-[2.5rem] w-full max-w-md relative z-10 overflow-hidden">
                     
+                    <div class="flex justify-end mb-2">
+                        <?= gntoma_lang_switch_markup() ?>
+                    </div>
                     <div class="text-center mb-8">
                         <img src="images/logo.png" alt="GNTOMA" class="h-16 w-auto mx-auto mb-4 drop-shadow-sm hover:scale-105 smooth-transition" onerror="this.style.display='none';">
                     </div>
@@ -110,92 +116,92 @@ $success_msg = isset($_GET['success']) ? htmlspecialchars($_GET['success']) : ""
                     <?php endif; ?>
                     <?php if ($success_msg === 'otp_sent'): ?>
                         <div class="bg-blue-50 text-primary text-sm p-4 rounded-2xl mb-6 font-semibold text-center animate__animated animate__fadeIn border border-blue-100">
-                            Code à 6 chiffres envoyé<?php echo $masked_email !== '' ? ' à ' . htmlspecialchars($masked_email, ENT_QUOTES, 'UTF-8') : ''; ?> ! Vérifiez votre boîte mail.
+                            <?= htmlspecialchars(__('landing.otp_sent'), ENT_QUOTES, 'UTF-8') ?><?php echo $masked_email !== '' ? ' ' . htmlspecialchars(__('landing.otp_sent_to'), ENT_QUOTES, 'UTF-8') . ' ' . htmlspecialchars($masked_email, ENT_QUOTES, 'UTF-8') : ''; ?> <?= htmlspecialchars(__('landing.otp_sent_suffix'), ENT_QUOTES, 'UTF-8') ?>
                         </div>
                     <?php elseif ($success_msg === 'password_reset'): ?>
                         <div class="bg-green-50 text-green-600 text-sm p-4 rounded-2xl mb-6 font-semibold text-center animate__animated animate__fadeIn border border-green-100">
-                            Mot de passe modifié avec succès. Vous pouvez vous connecter.
+                            <?= htmlspecialchars(__('landing.password_reset_ok'), ENT_QUOTES, 'UTF-8') ?>
                         </div>
                     <?php endif; ?>
 
                     <?php if ($step === 'login'): ?>
                         <div class="text-center mb-6">
-                            <h2 class="text-2xl font-bold text-dark tracking-tight">Espace Auteur</h2>
-                            <p class="text-gray-500 text-sm mt-1 font-medium">Connectez-vous pour gérer vos journaux.</p>
+                            <h2 class="text-2xl font-bold text-dark tracking-tight"><?= htmlspecialchars(__('landing.login_title'), ENT_QUOTES, 'UTF-8') ?></h2>
+                            <p class="text-gray-500 text-sm mt-1 font-medium"><?= htmlspecialchars(__('landing.login_sub'), ENT_QUOTES, 'UTF-8') ?></p>
                         </div>
                         <form action="journal/auth_login_process_3.php" method="POST" class="space-y-5">
                             <div class="relative group">
                                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 group-focus-within:text-primary smooth-transition" viewBox="0 0 20 20" fill="currentColor"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" /><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" /></svg>
                                 </div>
-                                <input type="text" name="login" required placeholder="Email ou Identifiant" class="w-full glass-input rounded-2xl py-4 pl-12 pr-4 font-semibold text-sm">
+                                <input type="text" name="login" required placeholder="<?= htmlspecialchars(__('landing.placeholder_login'), ENT_QUOTES, 'UTF-8') ?>" class="w-full glass-input rounded-2xl py-4 pl-12 pr-4 font-semibold text-sm">
                             </div>
 
                             <div class="relative group">
                                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 group-focus-within:text-primary smooth-transition" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" /></svg>
                                 </div>
-                                <input type="password" name="password" required placeholder="Mot de passe" class="w-full glass-input rounded-2xl py-4 pl-12 pr-4 font-semibold text-sm">
+                                <input type="password" name="password" required placeholder="<?= htmlspecialchars(__('landing.placeholder_password'), ENT_QUOTES, 'UTF-8') ?>" class="w-full glass-input rounded-2xl py-4 pl-12 pr-4 font-semibold text-sm">
                             </div>
                             
                             <div class="flex justify-end px-2">
-                                <a href="?step=forgot" class="text-xs font-bold text-gray-400 hover:text-primary smooth-transition">Mot de passe oublié ?</a>
+                                <a href="?step=forgot" class="text-xs font-bold text-gray-400 hover:text-primary smooth-transition"><?= htmlspecialchars(__('landing.forgot_link'), ENT_QUOTES, 'UTF-8') ?></a>
                             </div>
 
                             <button type="submit" class="w-full gntoma-dark-button text-white font-bold py-4 rounded-2xl active:scale-95 smooth-transition mt-2 shadow-lg">
-                                Se connecter
+                                <?= htmlspecialchars(__('landing.submit_login'), ENT_QUOTES, 'UTF-8') ?>
                             </button>
                         </form>
 
                         <!-- Options Carnet de Loyer et Pharmacie -->
                         <div class="mt-6 pt-6 border-t border-gray-100">
-                            <p class="text-center text-xs font-bold text-gray-400 uppercase tracking-wider mb-4">Autres services</p>
+                            <p class="text-center text-xs font-bold text-gray-400 uppercase tracking-wider mb-4"><?= htmlspecialchars(__('landing.services_title'), ENT_QUOTES, 'UTF-8') ?></p>
                             <div class="flex gap-3">
                                 <a href="carnetdeloyer/index.php" class="flex-1 inline-flex items-center justify-center bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-2xl shadow-lg active:scale-95 smooth-transition space-x-2">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" /></svg>
-                                    <span class="text-sm">Carnet Loyer</span>
+                                    <span class="text-sm"><?= htmlspecialchars(__('landing.carnet_loyer'), ENT_QUOTES, 'UTF-8') ?></span>
                                 </a>
                                 <a href="pharmacie/index.php" class="flex-1 inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-2xl shadow-lg active:scale-95 smooth-transition space-x-2">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
-                                    <span class="text-sm">Pharmacie</span>
+                                    <span class="text-sm"><?= htmlspecialchars(__('landing.pharmacie'), ENT_QUOTES, 'UTF-8') ?></span>
                                 </a>
                             </div>
                         </div>
 
                     <?php elseif ($step === 'forgot'): ?>
                         <div class="text-center mb-6">
-                            <h2 class="text-2xl font-bold text-dark tracking-tight">Mot de passe oublié</h2>
-                            <p class="text-gray-500 text-sm mt-1 font-medium">Entrez votre code utilisateur pour afficher l'email lié et recevoir un code OTP à 6 chiffres.</p>
+                            <h2 class="text-2xl font-bold text-dark tracking-tight"><?= htmlspecialchars(__('landing.forgot_title'), ENT_QUOTES, 'UTF-8') ?></h2>
+                            <p class="text-gray-500 text-sm mt-1 font-medium"><?= htmlspecialchars(__('landing.forgot_sub'), ENT_QUOTES, 'UTF-8') ?></p>
                         </div>
                         <form action="journal/auth_forgot_8.php" method="POST" class="space-y-5">
                             <div class="relative group">
                                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 group-focus-within:text-primary smooth-transition" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-1-11a1 1 0 112 0v3a1 1 0 11-2 0V7zm1 8a1.25 1.25 0 100-2.5A1.25 1.25 0 0010 15z" clip-rule="evenodd" /></svg>
                                 </div>
-                                <input type="text" name="code" required value="<?php echo htmlspecialchars($reset_code, ENT_QUOTES, 'UTF-8'); ?>" placeholder="Votre code utilisateur, ex: A56" class="w-full glass-input rounded-2xl py-4 pl-12 pr-4 font-semibold text-sm uppercase" inputmode="text" autocomplete="off" maxlength="10" pattern="[A-Za-z]\d+" hx-get="journal/auth_forgot_8.php" hx-trigger="keyup changed delay:350ms" hx-target="#forgot-code-result" hx-swap="innerHTML">
+                                <input type="text" name="code" required value="<?php echo htmlspecialchars($reset_code, ENT_QUOTES, 'UTF-8'); ?>" placeholder="<?= htmlspecialchars(__('landing.placeholder_user_code'), ENT_QUOTES, 'UTF-8') ?>" class="w-full glass-input rounded-2xl py-4 pl-12 pr-4 font-semibold text-sm uppercase" inputmode="text" autocomplete="off" maxlength="12" pattern="[A-Za-z]\d+" hx-get="journal/auth_forgot_8.php" hx-include="this" hx-push-url="false" hx-trigger="keyup changed delay:400ms" hx-target="#forgot-code-result" hx-swap="innerHTML">
                             </div>
 
                             <div id="forgot-code-result" class="min-h-[48px]">
                                 <?php if ($masked_email !== ''): ?>
                                     <div class="bg-white/70 border border-white rounded-2xl px-4 py-3 text-sm text-gray-600 font-semibold">
-                                        Email lié : <span class="text-dark font-black"><?php echo htmlspecialchars($masked_email, ENT_QUOTES, 'UTF-8'); ?></span>
+                                        <?= htmlspecialchars(__('landing.email_linked'), ENT_QUOTES, 'UTF-8') ?> <span class="text-dark font-black"><?php echo htmlspecialchars($masked_email, ENT_QUOTES, 'UTF-8'); ?></span>
                                     </div>
                                 <?php endif; ?>
                             </div>
 
                             <button type="submit" class="w-full gntoma-primary-button text-white font-bold py-4 rounded-2xl active:scale-95 smooth-transition shadow-lg shadow-blue-500/30">
-                                Envoyer le code OTP
+                                <?= htmlspecialchars(__('landing.send_otp'), ENT_QUOTES, 'UTF-8') ?>
                             </button>
                             
                             <div class="text-center pt-4">
-                                <a href="?step=login" class="text-sm font-bold text-gray-400 hover:text-dark smooth-transition">← Retour à la connexion</a>
+                                <a href="?step=login" class="text-sm font-bold text-gray-400 hover:text-dark smooth-transition"><?= htmlspecialchars(__('landing.back_login'), ENT_QUOTES, 'UTF-8') ?></a>
                             </div>
                         </form>
 
                     <?php elseif ($step === 'reset'): ?>
                         <div class="text-center mb-6">
-                            <h2 class="text-2xl font-bold text-dark tracking-tight">Nouveau mot de passe</h2>
-                            <p class="text-gray-500 text-sm mt-1 font-medium">Saisissez le code reçu et votre nouveau mot de passe (min. 6 caractères).</p>
+                            <h2 class="text-2xl font-bold text-dark tracking-tight"><?= htmlspecialchars(__('landing.reset_title'), ENT_QUOTES, 'UTF-8') ?></h2>
+                            <p class="text-gray-500 text-sm mt-1 font-medium"><?= htmlspecialchars(__('landing.reset_sub'), ENT_QUOTES, 'UTF-8') ?></p>
                         </div>
                         <form action="journal/auth_reset_9.php" method="POST" class="space-y-5">
                             <input type="hidden" name="code" value="<?php echo htmlspecialchars($reset_code, ENT_QUOTES, 'UTF-8'); ?>">
@@ -203,7 +209,7 @@ $success_msg = isset($_GET['success']) ? htmlspecialchars($_GET['success']) : ""
 
                             <?php if ($masked_email !== ''): ?>
                                 <div class="bg-white/70 border border-white rounded-2xl px-4 py-3 text-sm text-gray-600 font-semibold text-center">
-                                    Code envoyé à <span class="text-dark font-black"><?php echo htmlspecialchars($masked_email, ENT_QUOTES, 'UTF-8'); ?></span>
+                                    <?= htmlspecialchars(__('landing.code_sent_to'), ENT_QUOTES, 'UTF-8') ?> <span class="text-dark font-black"><?php echo htmlspecialchars($masked_email, ENT_QUOTES, 'UTF-8'); ?></span>
                                 </div>
                             <?php endif; ?>
                             
@@ -211,18 +217,18 @@ $success_msg = isset($_GET['success']) ? htmlspecialchars($_GET['success']) : ""
                                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 group-focus-within:text-primary smooth-transition" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clip-rule="evenodd" /></svg>
                                 </div>
-                                <input type="text" name="otp" required maxlength="6" pattern="\d{6}" placeholder="Code OTP à 6 chiffres" class="w-full glass-input rounded-2xl py-4 pl-12 pr-4 font-black tracking-widest text-center text-primary text-lg">
+                                <input type="text" name="otp" required maxlength="6" pattern="\d{6}" placeholder="<?= htmlspecialchars(__('landing.placeholder_otp'), ENT_QUOTES, 'UTF-8') ?>" class="w-full glass-input rounded-2xl py-4 pl-12 pr-4 font-black tracking-widest text-center text-primary text-lg">
                             </div>
 
                             <div class="relative group">
                                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 group-focus-within:text-primary smooth-transition" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" /></svg>
                                 </div>
-                                <input type="password" name="new_password" required minlength="6" placeholder="Nouveau mot de passe" class="w-full glass-input rounded-2xl py-4 pl-12 pr-4 font-semibold text-sm">
+                                <input type="password" name="new_password" required minlength="6" placeholder="<?= htmlspecialchars(__('landing.placeholder_new_password'), ENT_QUOTES, 'UTF-8') ?>" class="w-full glass-input rounded-2xl py-4 pl-12 pr-4 font-semibold text-sm">
                             </div>
 
                             <button type="submit" class="w-full gntoma-dark-button text-white font-bold py-4 rounded-2xl active:scale-95 smooth-transition shadow-lg">
-                                Confirmer la modification
+                                <?= htmlspecialchars(__('landing.confirm_reset'), ENT_QUOTES, 'UTF-8') ?>
                             </button>
                         </form>
                     <?php endif; ?>
@@ -232,25 +238,25 @@ $success_msg = isset($_GET['success']) ? htmlspecialchars($_GET['success']) : ""
 
             <div class="order-2 lg:order-1 space-y-8 animate__animated animate__fadeInLeft">
                 <div class="inline-flex items-center space-x-2 gntoma-badge px-4 py-2 rounded-full text-sm font-bold text-primary backdrop-blur-md">
-                    <span>L'édition privée, simplifiée.</span>
+                    <span><?= htmlspecialchars(__('landing.badge'), ENT_QUOTES, 'UTF-8') ?></span>
                 </div>
                 
                 <h1 class="text-4xl sm:text-5xl md:text-7xl font-black tracking-tight leading-[1.02] text-dark gntoma-title-glow">
-                    Monétisez vos <br>
-                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500">histoires privées.</span>
+                    <?= htmlspecialchars(__('landing.hero_line1'), ENT_QUOTES, 'UTF-8') ?> <br>
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-cyan-500"><?= htmlspecialchars(__('landing.hero_gradient'), ENT_QUOTES, 'UTF-8') ?></span>
                 </h1>
                 
                 <p class="text-base sm:text-lg md:text-xl text-gray-600 max-w-xl leading-relaxed font-medium">
-                    Une interface élégante pour vos lecteurs. Un contrôle total pour vous. Laissez-les s'abonner via Mobile Money pour accéder à vos journaux exclusifs.
+                    <?= htmlspecialchars(__('landing.hero_sub'), ENT_QUOTES, 'UTF-8') ?>
                 </p>
 
                 <div class="pt-2 flex flex-col sm:flex-row gap-3 sm:items-center">
                     <a href="journal/auth_register_1.php" class="inline-flex items-center justify-center gntoma-primary-button text-white font-bold px-8 py-4 rounded-2xl shadow-xl active:scale-95 smooth-transition space-x-2 group">
-                        <span>Créer mon espace gratuit</span>
+                        <span><?= htmlspecialchars(__('landing.cta_register'), ENT_QUOTES, 'UTF-8') ?></span>
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:translate-x-1 smooth-transition" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" clip-rule="evenodd" /></svg>
                     </a>
                     <a href="?step=login" class="inline-flex items-center justify-center gntoma-chip text-dark font-bold px-6 py-4 rounded-2xl smooth-transition">
-                        Continuer vers la connexion
+                        <?= htmlspecialchars(__('landing.cta_login'), ENT_QUOTES, 'UTF-8') ?>
                     </a>
                 </div>
             </div>
@@ -259,18 +265,21 @@ $success_msg = isset($_GET['success']) ? htmlspecialchars($_GET['success']) : ""
         <div class="w-full mt-20 animate__animated animate__fadeInUp">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 items-center">
                 <div class="glass-panel gntoma-section-shell p-3 rounded-[2.5rem] border-white hover:-translate-y-2 smooth-transition">
-                    <img src="images/showcase_1.jpg" alt="Lecture" class="w-full h-72 object-cover rounded-[2rem]" onerror="this.src='https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80';">
+                    <img src="images/showcase_1.jpg" alt="<?= htmlspecialchars(__('landing.alt_reading'), ENT_QUOTES, 'UTF-8') ?>" class="w-full h-72 object-cover rounded-[2rem]" onerror="this.src='https://images.unsplash.com/photo-1551288049-bebda4e38f71?auto=format&fit=crop&w=800&q=80';">
                 </div>
                 <div class="glass-panel gntoma-section-shell p-3 rounded-[2.5rem] border-white hover:-translate-y-2 smooth-transition">
-                    <img src="images/showcase_2.jpg" alt="Dashboard" class="w-full h-72 object-cover rounded-[2rem]" onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80';">
+                    <img src="images/showcase_2.jpg" alt="<?= htmlspecialchars(__('landing.alt_dashboard'), ENT_QUOTES, 'UTF-8') ?>" class="w-full h-72 object-cover rounded-[2rem]" onerror="this.src='https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&w=800&q=80';">
                 </div>
             </div>
         </div>
 
     </main>
 
-    <footer class="p-8 text-center text-gray-400 text-sm font-bold bg-white/20 backdrop-blur-md">
-        GNTOMA SAAS © 2026. Designé pour la beauté.
+    <footer class="p-8 text-center text-gray-400 text-sm font-bold bg-white/20 backdrop-blur-md space-y-3">
+        <p><?= htmlspecialchars(__('landing.footer', ['year' => (string) date('Y')]), ENT_QUOTES, 'UTF-8') ?></p>
+        <p>
+            <a href="conditions_utilisation.php" class="text-primary hover:underline font-semibold"><?= htmlspecialchars(__('landing.terms_link'), ENT_QUOTES, 'UTF-8') ?></a>
+        </p>
     </footer>
 
 </div>

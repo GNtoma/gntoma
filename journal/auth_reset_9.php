@@ -3,24 +3,7 @@ declare(strict_types=1);
 
 session_start();
 require_once 'config.php';
-
-function maskEmailAddress(string $email): string
-{
-    $parts = explode('@', $email, 2);
-    $local = $parts[0] ?? '';
-    $domain = $parts[1] ?? '';
-    $length = strlen($local);
-
-    if ($length <= 1) {
-        $maskedLocal = $local . '....';
-    } elseif ($length <= 4) {
-        $maskedLocal = substr($local, 0, 1) . '....' . substr($local, -1);
-    } else {
-        $maskedLocal = substr($local, 0, 2) . '....' . substr($local, -2);
-    }
-
-    return $domain !== '' ? $maskedLocal . '@' . $domain : $maskedLocal;
-}
+require_once __DIR__ . '/gntoma_email_mask.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: ../index.php');
@@ -62,7 +45,7 @@ try {
         exit;
     }
 
-    $maskedEmail = maskEmailAddress((string) $user['email']);
+    $maskedEmail = gntoma_mask_email((string) $user['email']);
 
     if ((string) $user['otp_code'] !== $otpInput) {
         header('Location: ../index.php?step=reset&code=' . urlencode($code) . '&masked_email=' . urlencode($maskedEmail) . '&error=' . urlencode('Code OTP incorrect.'));

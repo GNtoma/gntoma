@@ -9,13 +9,14 @@ declare(strict_types=1);
  */
 
 session_start();
+require_once 'config.php';
+require_once __DIR__ . '/i18n.php';
+gntoma_init_locale_from_request();
+
 if (!isset($_SESSION['user_id'])) {
-    // Si la session a expiré, on renvoie un message discret qui s'insérera via HTMX
-    echo '<div class="bg-red-50 text-red-500 font-bold p-6 rounded-3xl text-center border border-red-100">Votre session a expiré. Veuillez vous reconnecter.</div>';
+    echo '<div class="bg-red-50 text-red-500 font-bold p-6 rounded-3xl text-center border border-red-100">' . htmlspecialchars(__('journal_list.session_expired'), ENT_QUOTES, 'UTF-8') . '</div>';
     exit;
 }
-
-require_once 'config.php';
 
 try {
     // Récupération des journaux liés au user_code de la session
@@ -30,12 +31,10 @@ try {
     $journals = $stmt->fetchAll();
 } catch (PDOException $e) {
     error_log("Erreur chargement journaux GNTOMA : " . $e->getMessage());
-    echo '<div class="bg-red-50 text-red-500 font-bold p-6 rounded-3xl text-center border border-red-100">Impossible de charger vos journaux pour le moment.</div>';
+    echo '<div class="bg-red-50 text-red-500 font-bold p-6 rounded-3xl text-center border border-red-100">' . htmlspecialchars(__('journal_list.load_error'), ENT_QUOTES, 'UTF-8') . '</div>';
     exit;
 }
 
-// FORMATAGE DES DATES EN FRANÇAIS (Mois)
-$mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 ?>
 
 <?php if (empty($journals)): ?>
@@ -47,10 +46,10 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                 </svg>
             </div>
-            <h3 class="text-xl font-black text-dark mb-2">Aucune publication</h3>
-            <p class="text-sm text-gray-500 font-medium max-w-sm mb-8">Votre espace est encore vide. Commencez à écrire et monétisez votre premier journal dès aujourd'hui.</p>
+            <h3 class="text-xl font-black text-dark mb-2"><?= htmlspecialchars(__('journal_list.empty_title'), ENT_QUOTES, 'UTF-8') ?></h3>
+            <p class="text-sm text-gray-500 font-medium max-w-sm mb-8"><?= htmlspecialchars(__('journal_list.empty_text'), ENT_QUOTES, 'UTF-8') ?></p>
             <a href="journal_create_9.php" class="bg-dark text-white font-bold px-8 py-3.5 rounded-full shadow-xl hover:bg-black active:scale-95 smooth-transition flex items-center space-x-2">
-                <span>Créer mon premier journal</span>
+                <span><?= htmlspecialchars(__('journal_list.cta_create'), ENT_QUOTES, 'UTF-8') ?></span>
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" /></svg>
             </a>
         </div>
@@ -61,20 +60,19 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
     <?php foreach ($journals as $index => $journal): 
         // Logique pour les badges de statut
         $status_bg = 'bg-gray-100 text-gray-600';
-        $status_label = 'Privé';
-        
+        $status_label = __('journal_status.private');
+
         if ($journal['status'] === 'public') {
             $status_bg = 'bg-green-100 text-green-700';
-            $status_label = 'Public';
+            $status_label = __('journal_status.public');
         } elseif ($journal['status'] === 'paid') {
             $status_bg = 'bg-orange-100 text-orange-700';
-            $status_label = 'Payant';
+            $status_label = __('journal_status.paid');
         }
 
-        // Formatage de la date (Ex: 25 Avril 2026)
         $date_obj = new DateTime($journal['created_at']);
         $jour = $date_obj->format('d');
-        $mois = $mois_fr[(int)$date_obj->format('m') - 1];
+        $mois = __('months.' . (string) (int) $date_obj->format('n'));
         $annee = $date_obj->format('Y');
         $date_formatee = "$jour $mois $annee";
     ?>
@@ -127,9 +125,9 @@ $mois_fr = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'A
             
             <div class="px-6 pb-6 pt-2 border-t border-gray-100/50 flex space-x-3">
                 <a href="journal_edit_13.php?id=<?php echo $journal['id']; ?>" class="flex-1 bg-surface text-dark font-bold text-sm py-3 rounded-2xl hover:bg-gray-200 smooth-transition text-center border border-gray-100">
-                    Gérer
+                    <?= htmlspecialchars(__('journal_list.manage'), ENT_QUOTES, 'UTF-8') ?>
                 </a>
-                <button class="w-12 h-12 flex items-center justify-center bg-blue-50 text-primary rounded-2xl hover:bg-blue-100 smooth-transition border border-blue-100" title="Copier le lien d'accès">
+                <button class="w-12 h-12 flex items-center justify-center bg-blue-50 text-primary rounded-2xl hover:bg-blue-100 smooth-transition border border-blue-100" title="<?= htmlspecialchars(__('journal_list.copy_link_title'), ENT_QUOTES, 'UTF-8') ?>">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
                     </svg>

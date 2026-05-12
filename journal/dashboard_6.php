@@ -2,6 +2,8 @@
 declare(strict_types=1);
 session_start();
 require_once 'config.php';
+require_once __DIR__ . '/i18n.php';
+gntoma_init_locale_from_request();
 
 // 1. SÉCURITÉ : Redirection si non connecté
 if (!isset($_SESSION['user_id'])) {
@@ -63,7 +65,10 @@ try {
         exit;
     }
 
-    $time_remaining = $now->diff($expiry)->format('%a j %h h');
+    $diff = $now->diff($expiry);
+    $time_remaining = gntoma_locale() === 'en'
+        ? $diff->format('%a d %h h')
+        : $diff->format('%a j %h h');
 } catch (Throwable $e) {
     error_log('Erreur dashboard GNTOMA : ' . $e->getMessage());
 
@@ -72,16 +77,16 @@ try {
         'user_code' => (string) $_SESSION['user_id'],
         'profile_pic' => null,
     ];
-    $time_remaining = 'Indisponible';
-    $dashboardFatalError = "Certaines données du tableau de bord n'ont pas pu être chargées.";
+    $time_remaining = __('dashboard.time_unavailable');
+    $dashboardFatalError = __('dashboard.fatal_error');
 }
 ?>
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="<?= htmlspecialchars(gntoma_html_lang(), ENT_QUOTES, 'UTF-8') ?>">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GNTOMA - Dashboard</title>
+    <title><?= htmlspecialchars(__('dashboard.page_title'), ENT_QUOTES, 'UTF-8') ?></title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
@@ -105,7 +110,7 @@ try {
             color: #1D1D1F;
             position: relative;
             min-height: 100vh;
-            /* Fond style Telegram : mesh gradient doux avec blobs colorés */
+            /* Fond type tableau de bord : dégradé maille avec halos colorés */
             background:
                 radial-gradient(ellipse at 15% 15%, rgba(0, 122, 255, 0.12) 0%, transparent 50%),
                 radial-gradient(ellipse at 85% 25%, rgba(162, 89, 255, 0.10) 0%, transparent 50%),
@@ -114,7 +119,7 @@ try {
                 radial-gradient(ellipse at 75% 55%, rgba(255, 59, 130, 0.06) 0%, transparent 40%),
                 linear-gradient(160deg, #EEF2FF 0%, #F0F9FF 30%, #FDF4FF 60%, #FFF7ED 100%);
         }
-        /* Motif de points subtil style Telegram wallpaper */
+        /* Motif de points subtil sur le fond */
         body::before {
             content: '';
             position: fixed;
@@ -177,11 +182,14 @@ try {
                     </div>
                 </div>
             </div>
-            <a href="auth_logout_7.php" class="w-9 h-9 bg-white/80 border border-gray-100 rounded-full flex items-center justify-center text-red-400 hover:bg-red-50 hover:border-red-100 hover:text-red-600 active:scale-95 transition-all shadow-sm flex-shrink-0" title="Quitter">
-                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-            </a>
+            <div class="flex items-center gap-1.5 flex-shrink-0">
+                <?= gntoma_lang_switch_markup() ?>
+                <a href="auth_logout_7.php" class="w-9 h-9 bg-white/80 border border-gray-100 rounded-full flex items-center justify-center text-red-400 hover:bg-red-50 hover:border-red-100 hover:text-red-600 active:scale-95 transition-all shadow-sm" title="<?= htmlspecialchars(__('dashboard.logout_title'), ENT_QUOTES, 'UTF-8') ?>">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                </a>
+            </div>
         </div>
     </header>
 
@@ -208,7 +216,7 @@ try {
                 }
 
                 error_log('Erreur rendu dashboard GNTOMA : ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
-                $dashboardBodyHtml = '<div class="bg-red-50 border border-red-100 text-red-600 text-sm p-5 rounded-[2rem] font-medium">Une erreur est survenue pendant le chargement du tableau de bord.</div>';
+                $dashboardBodyHtml = '<div class="bg-red-50 border border-red-100 text-red-600 text-sm p-5 rounded-[2rem] font-medium">' . htmlspecialchars(__('dashboard.load_error'), ENT_QUOTES, 'UTF-8') . '</div>';
             }
 
             echo $dashboardBodyHtml;
