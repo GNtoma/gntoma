@@ -18,8 +18,8 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-$user_code = $_SESSION['user_id'];
-$thread_id = (int)($_GET['thread'] ?? 0);
+$user_code = strtoupper(trim((string) $_SESSION['user_id']));
+$thread_id = (int) ($_GET['thread'] ?? 0);
 
 if (!$thread_id) {
     header("Location: messages_list.php");
@@ -109,14 +109,24 @@ $error = $_GET['error'] ?? null;
         }
     </script>
     <style>
-        body { 
-            font-family: 'Outfit', sans-serif; 
-            background-color: #e8e6df;
-            background-image:
-                radial-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px);
-            background-size: 12px 12px;
-            background-attachment: fixed;
+        .chat-page-root {
+            font-family: 'Outfit', sans-serif;
             -webkit-font-smoothing: antialiased;
+            background-color: #dcd7cd;
+            background-image:
+                radial-gradient(ellipse 120% 80% at 50% -20%, rgba(0, 122, 255, 0.09), transparent 50%),
+                radial-gradient(ellipse 80% 60% at 100% 50%, rgba(124, 58, 237, 0.06), transparent 45%),
+                radial-gradient(ellipse 70% 50% at 0% 80%, rgba(52, 199, 89, 0.05), transparent 40%),
+                repeating-linear-gradient(
+                    135deg,
+                    transparent,
+                    transparent 11px,
+                    rgba(255, 255, 255, 0.06) 11px,
+                    rgba(255, 255, 255, 0.06) 12px
+                ),
+                radial-gradient(rgba(0, 0, 0, 0.045) 1px, transparent 1px);
+            background-size: auto, auto, auto, auto, 14px 14px;
+            background-attachment: fixed;
         }
         .message-bubble-me {
             background: #007AFF;
@@ -131,10 +141,15 @@ $error = $_GET['error'] ?? null;
         }
         .chat-container {
             scroll-behavior: smooth;
-            background-color: rgba(248, 246, 240, 0.92);
+            min-height: 0;
+            flex: 1 1 0%;
+            background-color: rgba(252, 250, 245, 0.78);
             background-image:
-                radial-gradient(rgba(0, 0, 0, 0.035) 1px, transparent 1px);
-            background-size: 12px 12px;
+                radial-gradient(rgba(0, 0, 0, 0.028) 1px, transparent 1px),
+                linear-gradient(180deg, rgba(255, 255, 255, 0.35) 0%, transparent 28%);
+            background-size: 13px 13px, auto;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
         }
         @keyframes chatBubbleRowIn {
             from { opacity: 0; transform: translateY(6px); }
@@ -145,7 +160,7 @@ $error = $_GET['error'] ?? null;
         }
     </style>
 </head>
-<body class="h-[100dvh] flex flex-col overflow-hidden">
+<body class="min-h-[100dvh] h-[100dvh] flex flex-col overflow-hidden chat-page-root">
     
     <!-- Header -->
     <header class="bg-white/90 backdrop-blur-xl border-b border-gray-100 px-4 py-3 flex-shrink-0">
@@ -191,7 +206,7 @@ $error = $_GET['error'] ?? null;
     <?php endif; ?>
 
     <!-- Messages : rendu serveur immédiat, puis rafraîchissement périodique -->
-    <div class="flex-1 overflow-y-auto px-3 sm:px-4 py-4 chat-container" id="chat-container"
+    <div class="flex-1 min-h-0 overflow-y-auto px-3 sm:px-4 py-4 chat-container" id="chat-container"
          hx-get="message_chat_partial.php?thread=<?= (int)$thread_id ?>"
          hx-trigger="every 4s"
          hx-target="#chat-container"

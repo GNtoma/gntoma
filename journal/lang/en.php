@@ -467,6 +467,11 @@ return [
         'err_user_not_found' => 'User not found.',
         'err_insufficient_credits' => 'Not enough credits to send this message.',
         'err_system' => 'Something went wrong. Please try again.',
+        'partial_session' => 'Your session has expired.',
+        'partial_relogin' => 'Sign in again',
+        'partial_bad_thread' => 'Conversation not found.',
+        'partial_thread_denied' => 'You don’t have access to this conversation.',
+        'partial_back_list' => 'Back to messages',
     ],
     'message_send' => [
         'page_title' => 'New message — GNTOMA',

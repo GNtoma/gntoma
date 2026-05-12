@@ -467,6 +467,11 @@ return [
         'err_user_not_found' => 'Utilisateur introuvable.',
         'err_insufficient_credits' => 'Crédits insuffisants pour envoyer ce message.',
         'err_system' => 'Une erreur est survenue. Réessayez.',
+        'partial_session' => 'Session expirée ou invalide.',
+        'partial_relogin' => 'Se reconnecter',
+        'partial_bad_thread' => 'Conversation introuvable.',
+        'partial_thread_denied' => 'Vous n’avez pas accès à cette conversation.',
+        'partial_back_list' => 'Retour aux messages',
     ],
     'message_send' => [
         'page_title' => 'Nouveau message — GNTOMA',
