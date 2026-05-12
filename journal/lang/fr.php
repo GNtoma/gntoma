@@ -453,6 +453,7 @@ return [
         'empty_hint' => 'Commencez à discuter avec d\'autres membres',
         'blocked' => 'Bloqués',
         'filters' => 'Filtres',
+        'cta_start_chat' => 'Nouveau message',
     ],
     'message_chat' => [
         'low_credits' => 'Crédits insuffisants',

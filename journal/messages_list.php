@@ -17,7 +17,7 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-$user_code = $_SESSION['user_id'];
+$user_code = strtoupper(trim((string) $_SESSION['user_id']));
 
 try {
     // Récupérer les crédits de l'utilisateur
@@ -98,19 +98,22 @@ $success = $_GET['success'] ?? null;
         }
     </script>
     <style>
-        body { 
-            font-family: 'Outfit', sans-serif; 
-            background-color: #f8fafc;
-            background-image: 
-                radial-gradient(at 10% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
-                radial-gradient(at 90% 10%, rgba(249, 115, 22, 0.08) 0px, transparent 50%),
-                radial-gradient(at 90% 90%, rgba(168, 85, 247, 0.08) 0px, transparent 50%),
-                radial-gradient(at 10% 90%, rgba(59, 130, 246, 0.08) 0px, transparent 50%);
-            background-attachment: fixed;
+        body {
+            font-family: 'Outfit', sans-serif;
             -webkit-font-smoothing: antialiased;
+            background-color: #dcd7cd;
+            background-image:
+                radial-gradient(ellipse 100% 70% at 50% -15%, rgba(0, 122, 255, 0.08), transparent 52%),
+                radial-gradient(ellipse 70% 50% at 100% 30%, rgba(124, 58, 237, 0.06), transparent 45%),
+                repeating-linear-gradient(135deg, transparent, transparent 11px, rgba(255, 255, 255, 0.07) 11px, rgba(255, 255, 255, 0.07) 12px),
+                radial-gradient(rgba(0, 0, 0, 0.04) 1px, transparent 1px);
+            background-size: auto, auto, auto, 14px 14px;
+            background-attachment: fixed;
         }
-        .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(25px); }
-        .message-preview { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+        .glass-panel { background: rgba(255, 255, 255, 0.92); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border: 1px solid rgba(255, 255, 255, 0.85); box-shadow: 0 12px 40px rgba(15, 23, 42, 0.06); }
+        .message-preview { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.35; }
+        .inbox-row { border-bottom: 1px solid rgba(0, 0, 0, 0.06); }
+        .inbox-row:last-child { border-bottom: 0; }
     </style>
 </head>
 <body class="min-h-screen pb-20">
@@ -175,47 +178,59 @@ $success = $_GET['success'] ?? null;
             </a>
         </div>
 
-        <!-- Liste des conversations -->
-        <div class="glass-panel rounded-[2rem] p-4">
-            <h2 class="text-sm font-bold text-gray-500 uppercase tracking-widest mb-4 px-2"><?= htmlspecialchars(__('messages_list.conversations'), ENT_QUOTES, 'UTF-8') ?></h2>
-            
+        <!-- Liste des conversations (fil type boîte de réception) -->
+        <div class="glass-panel rounded-[2rem] overflow-hidden shadow-xl shadow-slate-900/5">
+            <div class="px-4 py-3 border-b border-gray-100/80 bg-white/50">
+                <h2 class="text-xs font-black uppercase tracking-[0.2em] text-gray-400"><?= htmlspecialchars(__('messages_list.conversations'), ENT_QUOTES, 'UTF-8') ?></h2>
+            </div>
+
             <?php if (empty($threads)): ?>
-            <div class="text-center py-12">
-                <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <svg class="h-10 w-10 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <div class="text-center py-14 px-4">
+                <div class="w-20 h-20 bg-gradient-to-br from-primary/15 to-primary/5 rounded-2xl flex items-center justify-center mx-auto mb-4 ring-1 ring-primary/10">
+                    <svg class="h-10 w-10 text-primary/60" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                     </svg>
                 </div>
-                <p class="text-gray-500 font-medium"><?= htmlspecialchars(__('messages_list.empty'), ENT_QUOTES, 'UTF-8') ?></p>
-                <p class="text-gray-400 text-sm mt-1"><?= htmlspecialchars(__('messages_list.empty_hint'), ENT_QUOTES, 'UTF-8') ?></p>
+                <p class="text-gray-600 font-semibold"><?= htmlspecialchars(__('messages_list.empty'), ENT_QUOTES, 'UTF-8') ?></p>
+                <p class="text-gray-400 text-sm mt-2"><?= htmlspecialchars(__('messages_list.empty_hint'), ENT_QUOTES, 'UTF-8') ?></p>
+                <a href="message_send.php" class="inline-flex mt-6 bg-primary text-white font-bold text-sm px-6 py-3 rounded-2xl shadow-lg shadow-blue-500/25 hover:bg-blue-600 transition-all">
+                    <?= htmlspecialchars(__('messages_list.cta_start_chat'), ENT_QUOTES, 'UTF-8') ?>
+                </a>
             </div>
             <?php else: ?>
-            <div class="space-y-2">
+            <div class="divide-y divide-gray-100/90">
                 <?php foreach ($threads as $thread): ?>
-                <a href="message_chat.php?thread=<?= $thread['id'] ?>" class="flex items-center space-x-3 p-3 rounded-2xl hover:bg-gray-50 transition-all <?= ($thread['unread_count'] ?? 0) > 0 ? 'bg-blue-50/50' : '' ?>">
-                    <div class="relative">
-                        <?php 
+                <?php
+                $ts = !empty($thread['last_message_at']) ? strtotime((string) $thread['last_message_at']) : null;
+                $timeLabel = '';
+                if ($ts) {
+                    $timeLabel = date('Y-m-d', $ts) === date('Y-m-d')
+                        ? date('H:i', $ts)
+                        : date('d/m/y', $ts);
+                }
+                ?>
+                <a href="message_chat.php?thread=<?= (int) $thread['id'] ?>" class="inbox-row flex items-center gap-3 px-4 py-3.5 hover:bg-white/95 active:bg-gray-50/90 transition-colors <?= ($thread['unread_count'] ?? 0) > 0 ? 'bg-blue-50/70' : '' ?>">
+                    <div class="relative flex-shrink-0">
+                        <?php
                         $profile_pic = !empty($thread['other_profile_pic']) ? '../' . $thread['other_profile_pic'] : '../images/user_default.png';
                         ?>
-                        <img src="<?= htmlspecialchars($profile_pic) ?>" alt="" class="w-12 h-12 rounded-xl object-cover border border-gray-100">
+                        <img src="<?= htmlspecialchars($profile_pic) ?>" alt="" class="w-14 h-14 rounded-2xl object-cover border border-white shadow-sm ring-1 ring-black/5">
                         <?php if (($thread['unread_count'] ?? 0) > 0): ?>
-                        <span class="absolute -top-1 -right-1 w-5 h-5 bg-primary text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                            <?= $thread['unread_count'] ?>
+                        <span class="absolute -top-0.5 -right-0.5 min-w-[1.25rem] h-5 px-1 bg-primary text-white text-[10px] font-black rounded-full flex items-center justify-center ring-2 ring-white">
+                            <?= (int) $thread['unread_count'] ?>
                         </span>
                         <?php endif; ?>
                     </div>
-                    <div class="flex-1 min-w-0">
-                        <div class="flex items-center justify-between mb-1">
-                            <p class="font-bold text-dark text-sm truncate">
-                                <?= htmlspecialchars($thread['other_first_name'] . ' ' . $thread['other_last_name']) ?>
+                    <div class="flex-1 min-w-0 py-0.5">
+                        <div class="flex items-start justify-between gap-2 mb-0.5">
+                            <p class="font-bold text-dark text-[15px] leading-tight truncate">
+                                <?= htmlspecialchars(trim($thread['other_first_name'] . ' ' . $thread['other_last_name']), ENT_QUOTES, 'UTF-8') ?>
                             </p>
-                            <?php if ($thread['last_message_at']): ?>
-                            <span class="text-[10px] text-gray-400">
-                                <?= date('d/m', strtotime($thread['last_message_at'])) ?>
-                            </span>
+                            <?php if ($timeLabel !== ''): ?>
+                            <span class="text-[11px] text-gray-400 font-semibold tabular-nums flex-shrink-0 pt-0.5"><?= htmlspecialchars($timeLabel, ENT_QUOTES, 'UTF-8') ?></span>
                             <?php endif; ?>
                         </div>
-                        <p class="text-xs text-gray-500 message-preview <?= ($thread['unread_count'] ?? 0) > 0 ? 'font-semibold text-gray-700' : '' ?>">
+                        <p class="text-[13px] text-gray-500 message-preview <?= ($thread['unread_count'] ?? 0) > 0 ? 'font-semibold text-gray-800' : '' ?>">
                             <?= htmlspecialchars($thread['last_message_preview'] ?? __('messages_list.new_thread_preview'), ENT_QUOTES, 'UTF-8') ?>
                         </p>
                     </div>

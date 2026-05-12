@@ -170,7 +170,7 @@ if (isset($_GET['error'])) {
     
     ?>
     <div class="grid grid-cols-4 gap-2">
-        <a href="message_send.php" class="relative bg-white/80 backdrop-blur-sm border border-white py-3 px-2 rounded-[1.5rem] shadow-sm flex flex-col items-center justify-center space-y-1 hover:bg-white transition-all">
+        <a href="messages_list.php" class="relative bg-white/80 backdrop-blur-sm border border-white py-3 px-2 rounded-[1.5rem] shadow-sm flex flex-col items-center justify-center space-y-1 hover:bg-white transition-all">
             <svg class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
             </svg>
