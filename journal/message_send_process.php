@@ -13,8 +13,19 @@ require_once __DIR__ . '/message_chat_queries.php';
 require_once __DIR__ . '/i18n.php';
 gntoma_init_locale_from_request();
 
-if (!isset($_SESSION['user_id']) || $_SERVER['REQUEST_METHOD'] !== 'POST') {
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: messages_list.php');
+    exit;
+}
+
+if (!isset($_SESSION['user_id']) && !isset($_SESSION['user_code'])) {
+    header('Location: messages_list.php');
+    exit;
+}
+
+$user_code = gntoma_resolve_logged_in_user_code($pdo);
+if ($user_code === null || $user_code === '') {
+    header('Location: ../index.php');
     exit;
 }
 
@@ -32,6 +43,11 @@ function gntoma_is_chat_htmx_response(bool $isHtmx, int $chatThreadId): bool
 function gntoma_chat_htmx_emit_thread(PDO $pdo, string $user_code, int $thread_id): void
 {
     $messages = gntoma_fetch_chat_messages($pdo, $user_code, $thread_id);
+    $credits_stmt = $pdo->prepare('SELECT remaining_credits FROM message_credits WHERE UPPER(TRIM(user_code)) = ?');
+    $credits_stmt->execute([$user_code]);
+    $credits_row = $credits_stmt->fetch();
+    $no_message_credits = (int) ($credits_row['remaining_credits'] ?? 0) < 1;
+    $chat_bubbles_quiet_rows = true;
     require __DIR__ . '/message_chat_bubbles.php';
 }
 
@@ -52,8 +68,6 @@ function gntoma_chat_htmx_emit_success(PDO $pdo, string $user_code, int $thread_
     gntoma_chat_htmx_emit_thread($pdo, $user_code, $thread_id);
     gntoma_chat_htmx_emit_feedback_clear();
 }
-
-$user_code = strtoupper(trim((string) $_SESSION['user_id']));
 
 try {
     gntoma_ensure_message_credits($pdo, $user_code, 100);
@@ -215,7 +229,7 @@ try {
     try {
         // Crédits (verrouillage cohérent avec la suite dans la même transaction)
         if (!$is_free) {
-            $credits_stmt = $pdo->prepare('SELECT remaining_credits FROM message_credits WHERE user_code = ? FOR UPDATE');
+            $credits_stmt = $pdo->prepare('SELECT remaining_credits FROM message_credits WHERE UPPER(TRIM(user_code)) = ? FOR UPDATE');
             $credits_stmt->execute([$user_code]);
             $credits = $credits_stmt->fetch();
 
@@ -240,7 +254,7 @@ try {
         if ($provided_thread_id > 0) {
             $verify_stmt = $pdo->prepare('
                 SELECT id FROM message_threads 
-                WHERE id = ? AND (participant_1 = ? OR participant_2 = ?)
+                WHERE id = ? AND (UPPER(TRIM(participant_1)) = ? OR UPPER(TRIM(participant_2)) = ?)
                 LIMIT 1
             ');
             $verify_stmt->execute([$provided_thread_id, $user_code, $user_code]);
@@ -261,8 +275,8 @@ try {
         if ($thread_id === 0) {
             $thread_stmt = $pdo->prepare('
                 SELECT id FROM message_threads 
-                WHERE (participant_1 = ? AND participant_2 = ?) 
-                   OR (participant_1 = ? AND participant_2 = ?)
+                WHERE (UPPER(TRIM(participant_1)) = ? AND UPPER(TRIM(participant_2)) = ?) 
+                   OR (UPPER(TRIM(participant_1)) = ? AND UPPER(TRIM(participant_2)) = ?)
                 LIMIT 1
             ');
             $thread_stmt->execute([$user_code, $recipient_code, $recipient_code, $user_code]);
@@ -308,7 +322,7 @@ try {
             $pdo->prepare('
                 UPDATE message_credits
                 SET used_credits = used_credits + 1, remaining_credits = remaining_credits - 1
-                WHERE user_code = ?
+                WHERE UPPER(TRIM(user_code)) = ?
             ')->execute([$user_code]);
         }
 

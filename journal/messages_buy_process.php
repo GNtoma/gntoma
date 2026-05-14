@@ -9,13 +9,20 @@ declare(strict_types=1);
 
 session_start();
 require_once 'config.php';
+require_once __DIR__ . '/i18n.php';
 
-if (!isset($_SESSION['user_id']) || $_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header("Location: messages_buy.php");
+if ((!isset($_SESSION['user_id']) && !isset($_SESSION['user_code'])) || $_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: messages_buy.php');
     exit;
 }
 
-$user_code = $_SESSION['user_id'];
+$user_code = gntoma_resolve_logged_in_user_code($pdo) ?? '';
+if ($user_code === '') {
+    header('Location: ../index.php');
+    exit;
+}
+
+$return = trim((string) ($_POST['return'] ?? ''));
 $pack_size = (int)($_POST['pack_size'] ?? 1000);
 $pack_price = (float)($_POST['pack_price'] ?? 2);
 $is_gift = isset($_POST['is_gift']);
@@ -103,7 +110,11 @@ try {
     
     $pdo->commit();
     
-    header("Location: messages_buy.php?success=purchased");
+    if ($return === 'messages_list') {
+        header('Location: messages_list.php?success=credits_purchased');
+    } else {
+        header('Location: messages_buy.php?success=purchased');
+    }
     exit;
     
 } catch (PDOException $e) {

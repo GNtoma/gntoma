@@ -12,16 +12,20 @@ require_once 'config.php';
 require_once __DIR__ . '/i18n.php';
 gntoma_init_locale_from_request();
 
-if (!isset($_SESSION['user_id'])) {
+if (!isset($_SESSION['user_id']) && !isset($_SESSION['user_code'])) {
     header("Location: ../index.php");
     exit;
 }
 
-$user_code = $_SESSION['user_id'];
+$user_code = gntoma_resolve_logged_in_user_code($pdo);
+if ($user_code === null || $user_code === '') {
+    header('Location: ../index.php');
+    exit;
+}
 
 // Récupérer les crédits actuels
 try {
-    $credits_stmt = $pdo->prepare("SELECT * FROM message_credits WHERE user_code = ?");
+    $credits_stmt = $pdo->prepare("SELECT * FROM message_credits WHERE UPPER(TRIM(user_code)) = ?");
     $credits_stmt->execute([$user_code]);
     $credits = $credits_stmt->fetch();
     
@@ -33,7 +37,7 @@ try {
     // Historique des achats
     $history_stmt = $pdo->prepare("
         SELECT * FROM message_credit_purchases 
-        WHERE user_code = ? OR recipient_user_code = ?
+        WHERE UPPER(TRIM(user_code)) = ? OR UPPER(TRIM(COALESCE(recipient_user_code, ''))) = ?
         ORDER BY purchased_at DESC
         LIMIT 10
     ");
