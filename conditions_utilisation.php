@@ -28,6 +28,7 @@ function gntoma_terms_paragraphs(string $raw): array
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars(__('terms.page_title'), ENT_QUOTES, 'UTF-8') ?></title>
+    <?php require_once __DIR__ . '/ui_head.php'; ?>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&display=swap" rel="stylesheet">
     <script>
@@ -41,15 +42,16 @@ function gntoma_terms_paragraphs(string $raw): array
         }
     </script>
 </head>
-<body class="min-h-screen bg-[#F5F5F7] text-dark font-sans antialiased">
-    <header class="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-gray-100 px-4 py-4">
+<body class="min-h-screen text-dark font-sans antialiased">
+<?php require_once __DIR__ . '/ui_background.php'; ?>
+    <header class="sticky top-0 z-10 bg-white/90 backdrop-blur border-b border-gray-100 px-4 py-4 relative">
         <div class="max-w-3xl mx-auto flex items-center justify-between gap-3">
             <a href="index.php" class="text-primary font-bold text-sm hover:underline"><?= htmlspecialchars(__('terms.back_home'), ENT_QUOTES, 'UTF-8') ?></a>
             <?= gntoma_lang_switch_markup() ?>
         </div>
     </header>
 
-    <main class="max-w-3xl mx-auto px-4 py-10 pb-16">
+    <main class="max-w-3xl mx-auto px-4 py-10 pb-16 relative z-10">
         <h1 class="text-3xl font-black tracking-tight mb-2"><?= htmlspecialchars(__('terms.h1'), ENT_QUOTES, 'UTF-8') ?></h1>
         <p class="text-sm text-gray-500 mb-8"><?= htmlspecialchars(__('terms.updated', ['date' => $termsDate]), ENT_QUOTES, 'UTF-8') ?></p>
 

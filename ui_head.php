@@ -49,8 +49,20 @@ body.gntoma-body-ready {
     width: 0;
     height: 0;
 }
-html.gntoma-ui-ready body {
+html.gntoma-ui-ready body,
+html.gntoma-ui-ready body::before,
+html.gntoma-ui-ready body::after {
     background: transparent !important;
+    background-color: transparent !important;
+    background-image: none !important;
+}
+html.gntoma-ui-ready .snow-wrapper,
+html.gntoma-ui-ready .snow-layer {
+    display: none !important;
+}
+html.gntoma-ui-ready .pattern-dots {
+    opacity: 0 !important;
+    background-image: none !important;
 }
 .gntoma-ui-background {
     position: fixed;

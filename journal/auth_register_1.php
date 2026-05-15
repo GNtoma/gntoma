@@ -1,9 +1,9 @@
-<?php
+﻿<?php
 /**
  * PROJET : GNTOMA
  * FICHIER : journal/auth_register_1.php
  * VERSION : 1
- * DESCRIPTION : Page d'inscription (Design Lucide, Validation Vue.js, 6 caractères minimum).
+ * DESCRIPTION : Page d'inscription (Design Lucide, Validation Vue.js, 6 caractÃ¨res minimum).
  */
 
 ini_set('display_errors', '1');
@@ -61,46 +61,6 @@ if (isset($_GET['error'])) {
             -webkit-font-smoothing: antialiased;
             margin: 0;
             overflow-x: hidden;
-            background-color: #f4f7fb;
-        }
-
-        /* --- ARRIÈRE-PLAN ANIMÉ : NEIGE DOUCE --- */
-        .snow-wrapper {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: linear-gradient(135deg, #e6eff9 0%, #f4f7fb 50%, #ffffff 100%);
-            z-index: -2;
-            overflow: hidden;
-        }
-
-        .snow-layer {
-            position: absolute;
-            top: -100vh; left: 0; width: 100vw; height: 200vh;
-            background-image: 
-                radial-gradient(5px 5px at 100px 50px, rgba(255,255,255,0.9), transparent),
-                radial-gradient(6px 6px at 200px 150px, rgba(255,255,255,0.8), transparent),
-                radial-gradient(4px 4px at 300px 250px, rgba(255,255,255,0.9), transparent),
-                radial-gradient(7px 7px at 400px 350px, rgba(255,255,255,0.7), transparent),
-                radial-gradient(5px 5px at 500px 100px, rgba(255,255,255,0.9), transparent),
-                radial-gradient(4px 4px at 50px 200px, rgba(255,255,255,0.8), transparent),
-                radial-gradient(6px 6px at 150px 300px, rgba(255,255,255,0.9), transparent),
-                radial-gradient(5px 5px at 250px 400px, rgba(255,255,255,0.7), transparent),
-                radial-gradient(7px 7px at 350px 500px, rgba(255,255,255,0.9), transparent);
-            background-size: 600px 600px;
-            animation: fall 15s linear infinite;
-        }
-
-        .snow-layer:nth-child(2) {
-            background-size: 400px 400px; animation-duration: 25s; animation-delay: -5s; opacity: 0.6; filter: blur(1px);
-        }
-
-        .snow-layer:nth-child(3) {
-            background-size: 300px 300px; animation-duration: 35s; animation-delay: -10s; opacity: 0.4; filter: blur(2px);
-        }
-
-        @keyframes fall {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(100vh); }
         }
 
         /* --- GLASSMORPHISM --- */
@@ -124,11 +84,7 @@ if (isset($_GET['error'])) {
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
 
-    <?php require_once dirname(__DIR__) . '/ui_background.php'; ?>
-
-    <div class="snow-wrapper">
-        <div class="snow-layer"></div>
-        <div class="snow-layer"></div>
+    <?php require_once dirname(__DIR__) . '/ui_background.php'; ?>\r\n        <div class="snow-layer"></div>
         <div class="snow-layer"></div>
     </div>
 

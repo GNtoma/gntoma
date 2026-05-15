@@ -11,11 +11,13 @@ gntoma_init_locale_from_request();
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars(__('b2c.page_title'), ENT_QUOTES, 'UTF-8') ?></title>
     <?php require_once __DIR__ . '/pwa_head.php'; ?>
+    <?php require_once dirname(__DIR__) . '/ui_head.php'; ?>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
 </head>
-<body class="bg-[#F5F5F7] min-h-screen flex items-center justify-center p-6">
-    <div class="max-w-md w-full bg-white rounded-[3rem] p-10 shadow-2xl text-center animate__animated animate__zoomIn relative">
+<body class="min-h-screen flex items-center justify-center p-6">
+<?php require_once dirname(__DIR__) . '/ui_background.php'; ?>
+    <div class="max-w-md w-full bg-white/90 backdrop-blur-xl rounded-[3rem] p-10 shadow-2xl text-center animate__animated animate__zoomIn relative z-10 border border-white">
         <div class="flex justify-end mb-4"><?= gntoma_lang_switch_markup() ?></div>
         <div class="w-24 h-24 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-8">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" /></svg>

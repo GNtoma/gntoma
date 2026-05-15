@@ -89,11 +89,6 @@ $success_msg = isset($_GET['success']) ? htmlspecialchars($_GET['success']) : ""
 
 <?php require_once __DIR__ . '/ui_background.php'; ?>
 
-<div class="snow-wrapper">
-    <div class="snow-layer"></div>
-    <div class="snow-layer" style="animation-duration: 30s; opacity: 0.5;"></div>
-</div>
-
 <div class="min-h-screen flex flex-col justify-between relative z-10 gntoma-page-enter">
 
     <main class="flex-grow w-full max-w-7xl mx-auto px-5 py-8 md:px-8 md:pt-16 flex flex-col items-center space-y-16 md:space-y-20">

@@ -2,9 +2,9 @@
 declare(strict_types=1);
 
 session_start();
+require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/i18n.php';
 gntoma_init_locale_from_request();
-require_once '../includes/db.php';
 
 // Vérification de session
 if (!isset($_SESSION['user_id'])) {

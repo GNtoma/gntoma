@@ -7,6 +7,7 @@
  */
 
 session_start();
+require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/i18n.php';
 gntoma_init_locale_from_request();
 
@@ -24,6 +25,7 @@ $error_message = $_GET['error'] ?? '';
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title><?= htmlspecialchars(__('journal_create.page_title'), ENT_QUOTES, 'UTF-8') ?></title>
 
+    <?php require_once dirname(__DIR__) . '/ui_head.php'; ?>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -39,11 +41,7 @@ $error_message = $_GET['error'] ?? '';
         }
     </script>
     <style>
-        body { color: #1D1D1F; -webkit-font-smoothing: antialiased; overflow-x: hidden; background-color: #f4f7fb; }
-        
-        .snow-wrapper { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: -2; overflow: hidden; background: linear-gradient(135deg, #e6eff9 0%, #f4f7fb 100%); }
-        .snow-layer { position: absolute; top: -100vh; left: 0; width: 100vw; height: 200vh; background-image: radial-gradient(4px 4px at 100px 50px, rgba(255,255,255,0.8), transparent), radial-gradient(6px 6px at 200px 150px, rgba(255,255,255,0.9), transparent); background-size: 600px 600px; animation: fall 25s linear infinite; }
-        @keyframes fall { 0% { transform: translateY(0); } 100% { transform: translateY(100vh); } }
+        body { color: #1D1D1F; -webkit-font-smoothing: antialiased; overflow-x: hidden; }
 
         .glass-panel { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px); border: 1px solid rgba(255, 255, 255, 1); box-shadow: 0 30px 60px rgba(0, 0, 0, 0.05); }
         .input-lucide { background: rgba(255, 255, 255, 0.9); border: 1px solid rgba(0, 0, 0, 0.05); transition: all 0.3s ease; }
@@ -82,9 +80,9 @@ $error_message = $_GET['error'] ?? '';
 </head>
 <body class="min-h-screen py-8 md:py-12 px-4">
 
-    <div class="snow-wrapper"><div class="snow-layer"></div></div>
+    <?php require_once dirname(__DIR__) . '/ui_background.php'; ?>
 
-    <div class="max-w-2xl mx-auto animate__animated animate__fadeInUp">
+    <div class="max-w-2xl mx-auto animate__animated animate__fadeInUp relative z-10">
         
         <div class="flex items-center justify-between mb-8 md:mb-10 gap-2">
             <a href="dashboard_6.php" class="w-12 h-12 bg-white/80 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-sm border border-white hover:scale-105 smooth-transition text-dark">
