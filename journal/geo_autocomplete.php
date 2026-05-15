@@ -2,57 +2,54 @@
 declare(strict_types=1);
 
 /**
- * PROJET : GNTOMA
- * FICHIER : journal/geo_autocomplete.php
- * DESCRIPTION : Endpoint HTMX pour autocomplete des villes et communes
+ * Endpoint HTMX : suggestions de lieux via GeoNames (proxy serveur).
  */
 
-require_once 'config.php';
+require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/i18n.php';
+gntoma_init_locale_from_request();
 
-$query = trim($_GET['q'] ?? '');
-$type = $_GET['type'] ?? 'city'; // city ou commune
+$query = trim((string) ($_GET['q'] ?? $_GET['query'] ?? ''));
+$type = (string) ($_GET['type'] ?? 'city');
 
-if (strlen($query) < 2) {
+if (strlen($query) < GntomaGeonamesService::minQueryLength()) {
     exit;
 }
 
-try {
-    if ($type === 'city') {
-        $stmt = $pdo->prepare("
-            SELECT name FROM geo_cities 
-            WHERE name LIKE CONCAT('%', ?, '%') 
-            ORDER BY population DESC, name ASC 
-            LIMIT 8
-        ");
-        $stmt->execute([$query]);
-    } elseif ($type === 'commune') {
-        $stmt = $pdo->prepare("
-            SELECT name FROM geo_communes 
-            WHERE name LIKE CONCAT('%', ?, '%') 
-            ORDER BY name ASC 
-            LIMIT 8
-        ");
-        $stmt->execute([$query]);
-    } else {
-        exit;
-    }
+header('Content-Type: text/html; charset=UTF-8');
 
-    $results = $stmt->fetchAll(PDO::FETCH_COLUMN);
-    
-    if (empty($results)) {
-        echo '<div class="p-2 text-gray-500 text-sm">Aucun résultat</div>';
-        exit;
+$service = gntoma_geonames_service();
+if ($service === null) {
+    echo '<div class="p-2 text-red-500 text-sm">' . htmlspecialchars(__('geo_autocomplete.error'), ENT_QUOTES, 'UTF-8') . '</div>';
+    exit;
+}
+
+$result = $service->search($query);
+if (!$result['ok']) {
+    echo '<div class="p-2 text-red-500 text-sm">' . htmlspecialchars(__('geo_autocomplete.error'), ENT_QUOTES, 'UTF-8') . '</div>';
+    exit;
+}
+
+$results = $result['results'] ?? [];
+if ($results === []) {
+    echo '<div class="p-2 text-gray-500 text-sm">' . htmlspecialchars(__('geo_autocomplete.no_results'), ENT_QUOTES, 'UTF-8') . '</div>';
+    exit;
+}
+
+foreach ($results as $place) {
+    if (!is_array($place)) {
+        continue;
     }
-    
-    foreach ($results as $name) {
-        ?>
-        <div class="p-2 hover:bg-gray-100 cursor-pointer text-sm" 
-             onclick="selectGeo('<?= htmlspecialchars($name) ?>', '<?= $type ?>')">
-            <?= htmlspecialchars($name) ?>
-        </div>
-        <?php
+    $name = (string) ($place['name'] ?? '');
+    if ($name === '') {
+        continue;
     }
-} catch (PDOException $e) {
-    error_log('Erreur geo_autocomplete : ' . $e->getMessage());
-    echo '<div class="p-2 text-red-500 text-sm">Erreur de recherche</div>';
+    $label = (string) ($place['label'] ?? $name);
+    $safe = htmlspecialchars($label, ENT_QUOTES, 'UTF-8');
+    $jsName = str_replace(["\\", "'"], ["\\\\", "\\'"], $name);
+    $jsLabel = str_replace(["\\", "'"], ["\\\\", "\\'"], $label);
+    echo '<div class="p-2 hover:bg-gray-100 cursor-pointer text-sm" role="option" '
+        . 'onclick="selectGeo(\'' . $jsName . '\', \'' . htmlspecialchars($type, ENT_QUOTES, 'UTF-8') . '\', \'' . $jsLabel . '\')">'
+        . $safe
+        . '</div>';
 }

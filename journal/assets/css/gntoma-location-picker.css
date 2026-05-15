@@ -1,0 +1,109 @@
+.gntoma-loc {
+    position: relative;
+}
+
+.gntoma-loc__input-wrap {
+    position: relative;
+}
+
+.gntoma-loc__input {
+    width: 100%;
+}
+
+.gntoma-loc__loader {
+    position: absolute;
+    right: 0.85rem;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1.1rem;
+    height: 1.1rem;
+    border: 2px solid rgba(0, 122, 255, 0.2);
+    border-top-color: #007aff;
+    border-radius: 50%;
+    animation: gntoma-loc-spin 0.7s linear infinite;
+    display: none;
+    pointer-events: none;
+}
+
+.gntoma-loc.is-loading .gntoma-loc__loader {
+    display: block;
+}
+
+.gntoma-loc__list {
+    position: absolute;
+    z-index: 40;
+    left: 0;
+    right: 0;
+    margin-top: 0.35rem;
+    max-height: 14rem;
+    overflow-y: auto;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 0.85rem;
+    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+    display: none;
+}
+
+.gntoma-loc.is-open .gntoma-loc__list {
+    display: block;
+}
+
+.gntoma-loc__option {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 0.65rem 0.9rem;
+    font-size: 0.875rem;
+    line-height: 1.35;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    color: #1d1d1f;
+}
+
+.gntoma-loc__option:hover,
+.gntoma-loc__option.is-active {
+    background: rgba(0, 122, 255, 0.08);
+}
+
+.gntoma-loc__option-title {
+    font-weight: 600;
+}
+
+.gntoma-loc__option-meta {
+    font-size: 0.75rem;
+    color: #6b7280;
+    margin-top: 0.15rem;
+}
+
+.gntoma-loc__empty,
+.gntoma-loc__error {
+    padding: 0.65rem 0.9rem;
+    font-size: 0.8125rem;
+    color: #6b7280;
+}
+
+.gntoma-loc__error {
+    color: #b91c1c;
+}
+
+.gntoma-loc__selected {
+    margin-top: 0.5rem;
+    padding: 0.55rem 0.75rem;
+    border-radius: 0.75rem;
+    background: rgba(0, 122, 255, 0.06);
+    border: 1px solid rgba(0, 122, 255, 0.15);
+    font-size: 0.8125rem;
+    color: #1e3a5f;
+    display: none;
+}
+
+.gntoma-loc.has-selection .gntoma-loc__selected {
+    display: block;
+}
+
+@keyframes gntoma-loc-spin {
+    to {
+        transform: translateY(-50%) rotate(360deg);
+    }
+}

@@ -12,19 +12,23 @@ require_once 'config.php';
 require_once __DIR__ . '/i18n.php';
 gntoma_init_locale_from_request();
 
-if (!isset($_SESSION['user_id'])) {
+if (!isset($_SESSION['user_id']) && !isset($_SESSION['user_code'])) {
     header("Location: ../index.php");
     exit;
 }
 
-$user_code = $_SESSION['user_id'];
+$user_code = gntoma_resolve_logged_in_user_code($pdo);
+if ($user_code === null || $user_code === '') {
+    header("Location: ../index.php");
+    exit;
+}
 $BULK_COST = 50;
 
 // Mode : 'single' (1 personne) ou 'bulk' (envoi en masse)
 $mode = ($_GET['mode'] ?? '') === 'bulk' ? 'bulk' : 'single';
 
 // Vérifier les crédits (créer par défaut si inexistant)
-$credits_stmt = $pdo->prepare("SELECT remaining_credits FROM message_credits WHERE user_code = ?");
+$credits_stmt = $pdo->prepare("SELECT remaining_credits FROM message_credits WHERE UPPER(TRIM(user_code)) = ?");
 $credits_stmt->execute([$user_code]);
 $credits = $credits_stmt->fetch();
 if (!$credits) {
@@ -67,6 +71,44 @@ if ($is_access_request_context && !empty($recipient)) {
     ]);
 }
 
+// Ouvrir directement la conversation (modèle WhatsApp / Telegram) quand le destinataire est connu via ?to=
+if ($_SERVER['REQUEST_METHOD'] === 'GET'
+    && $mode === 'single'
+    && $to_code !== ''
+    && is_array($recipient)
+    && !isset($_GET['composer'])
+) {
+    try {
+        $other = strtoupper(trim((string) ($recipient['user_code'] ?? $to_code)));
+        if ($other !== '' && $other !== strtoupper(trim($user_code))) {
+            $find = $pdo->prepare('
+                SELECT id FROM message_threads 
+                WHERE (UPPER(TRIM(participant_1)) = ? AND UPPER(TRIM(participant_2)) = ?) 
+                   OR (UPPER(TRIM(participant_1)) = ? AND UPPER(TRIM(participant_2)) = ?)
+                LIMIT 1
+            ');
+            $find->execute([$user_code, $other, $other, $user_code]);
+            $row = $find->fetch(PDO::FETCH_ASSOC);
+            if (is_array($row) && isset($row['id'])) {
+                header('Location: message_chat.php?thread=' . (int) $row['id']);
+                exit;
+            }
+            $ins = $pdo->prepare('
+                INSERT INTO message_threads (participant_1, participant_2, last_message_at, last_message_preview)
+                VALUES (?, ?, NOW(), ?)
+            ');
+            $ins->execute([$user_code, $other, '']);
+            $tid = (int) $pdo->lastInsertId();
+            if ($tid > 0) {
+                header('Location: message_chat.php?thread=' . $tid);
+                exit;
+            }
+        }
+    } catch (Throwable $e) {
+        error_log('message_send open_chat: ' . $e->getMessage());
+    }
+}
+
 // === MODE SINGLE === Recherche d'utilisateurs
 $search_results = [];
 $search_term = trim((string)($_GET['search'] ?? ''));
@@ -107,13 +149,14 @@ $error = $_GET['error'] ?? null;
             }
         }
 
-        function selectGeo(name, type) {
+        function selectGeo(name, type, label) {
+            var display = label || name;
             if (type === 'city') {
-                document.getElementById('filter-city-input').value = name;
+                document.getElementById('filter-city-input').value = display;
                 document.getElementById('filter-city-suggestions').innerHTML = '';
                 document.getElementById('filter-city-suggestions').classList.add('hidden');
             } else if (type === 'commune') {
-                document.getElementById('filter-commune-input').value = name;
+                document.getElementById('filter-commune-input').value = display;
                 document.getElementById('filter-commune-suggestions').innerHTML = '';
                 document.getElementById('filter-commune-suggestions').classList.add('hidden');
             }
@@ -402,7 +445,7 @@ $error = $_GET['error'] ?? null;
                         <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('message_send.city_optional'), ENT_QUOTES, 'UTF-8') ?></label>
                         <input type="text" name="filter_city" id="filter-city-input"
                                placeholder="<?= htmlspecialchars(__('message_send.city_placeholder'), ENT_QUOTES, 'UTF-8') ?>"
-                               hx-get="geo_autocomplete.php?type=city"
+                               hx-get="geo_autocomplete.php?q={value}&type=city"
                                hx-trigger="keyup changed delay:300ms"
                                hx-target="#filter-city-suggestions"
                                class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 sm:py-3 text-sm focus:ring-2 focus:ring-primary outline-none">
@@ -414,7 +457,7 @@ $error = $_GET['error'] ?? null;
                         <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('message_send.commune_optional'), ENT_QUOTES, 'UTF-8') ?></label>
                         <input type="text" name="filter_commune" id="filter-commune-input"
                                placeholder="<?= htmlspecialchars(__('message_send.commune_placeholder'), ENT_QUOTES, 'UTF-8') ?>"
-                               hx-get="geo_autocomplete.php?type=commune"
+                               hx-get="geo_autocomplete.php?q={value}&type=commune"
                                hx-trigger="keyup changed delay:300ms"
                                hx-target="#filter-commune-suggestions"
                                class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-2.5 sm:py-3 text-sm focus:ring-2 focus:ring-primary outline-none">

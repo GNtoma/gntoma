@@ -3,6 +3,23 @@
 declare(strict_types=1);
 
 return [
+    'brand' => [
+        'site_name' => 'GNTOMA',
+    ],
+    'geo_autocomplete' => [
+        'no_results' => 'Aucun lieu correspondant. Choisissez une suggestion dans la liste.',
+        'error' => 'Recherche indisponible pour le moment.',
+    ],
+    'geonames' => [
+        'no_results' => 'Aucun lieu trouvé. Affinez votre recherche.',
+        'error_api' => 'Le service de lieux est temporairement indisponible.',
+        'error_network' => 'Connexion impossible. Vérifiez votre réseau.',
+        'error_rate_limit' => 'Trop de recherches. Patientez un instant.',
+        'error_unavailable' => 'La recherche de lieux n’est pas configurée sur ce serveur.',
+        'error_invalid_selection' => 'Lieu non valide. Choisissez une suggestion.',
+        'selected' => 'Lieu sélectionné',
+        'hint' => 'Tapez au moins 2 lettres, puis choisissez dans la liste.',
+    ],
     'dashboard' => [
         'page_title' => 'GNTOMA — Tableau de bord',
         'fatal_error' => 'Certaines données du tableau de bord n\'ont pas pu être chargées.',
@@ -668,6 +685,18 @@ return [
         'err_gender' => 'Valeur de sexe non reconnue.',
         'err_visibility' => 'Valeur de visibilité non reconnue.',
         'err_location_length' => 'Ville, commune ou pays : texte trop long (max. 100 caractères).',
+        'err_city_required' => 'Choisissez une ville dans la liste proposée.',
+        'err_commune_required' => 'Choisissez une commune ou un quartier dans la liste proposée.',
+        'err_city_invalid' => 'Cette ville n’est pas reconnue. Sélectionnez-la dans les suggestions (nom réel).',
+        'err_commune_invalid' => 'Cette commune n’est pas reconnue. Sélectionnez-la dans les suggestions (nom réel).',
+        'err_location_required' => 'Choisissez un lieu dans la liste GeoNames (ville ou localité).',
+        'err_location_invalid' => 'Ce lieu n’est pas reconnu. Sélectionnez une suggestion dans la liste.',
+        'location_place' => 'Ville / localité',
+        'location_placeholder' => 'Ex. : Kinshasa, Paris, Lubumbashi…',
+        'geo_pick_hint' => 'Recherche mondiale GeoNames : tapez au moins 2 lettres, puis choisissez une suggestion (pas de nom inventé).',
+        'preferences' => 'Préférences du compte',
+        'locale_label' => 'Langue de l’interface',
+        'locale_help' => 'Français ou anglais pour les menus et messages du site.',
         'err_bio_length' => 'La biographie est trop longue (max. 5000 caractères).',
         'err_phone_length' => 'Le numéro de téléphone est trop long.',
         'err_birth_invalid' => 'Date de naissance invalide.',

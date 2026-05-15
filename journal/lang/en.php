@@ -3,6 +3,23 @@
 declare(strict_types=1);
 
 return [
+    'brand' => [
+        'site_name' => 'GNTOMA',
+    ],
+    'geo_autocomplete' => [
+        'no_results' => 'No matching place. Pick a suggestion from the list.',
+        'error' => 'Search is temporarily unavailable.',
+    ],
+    'geonames' => [
+        'no_results' => 'No place found. Refine your search.',
+        'error_api' => 'The places service is temporarily unavailable.',
+        'error_network' => 'Could not connect. Check your network.',
+        'error_rate_limit' => 'Too many searches. Please wait a moment.',
+        'error_unavailable' => 'Place search is not configured on this server.',
+        'error_invalid_selection' => 'Invalid place. Choose a suggestion.',
+        'selected' => 'Selected place',
+        'hint' => 'Type at least 2 letters, then pick from the list.',
+    ],
     'dashboard' => [
         'page_title' => 'GNTOMA — Dashboard',
         'fatal_error' => 'Some dashboard data could not be loaded.',
@@ -668,6 +685,18 @@ return [
         'err_gender' => 'Unrecognized gender value.',
         'err_visibility' => 'Unrecognized visibility value.',
         'err_location_length' => 'City, district, or country text is too long (max 100 characters).',
+        'err_city_required' => 'Pick a city from the suggested list.',
+        'err_commune_required' => 'Pick a district or neighborhood from the suggested list.',
+        'err_city_invalid' => 'This city is not recognized. Select it from the suggestions (real place name).',
+        'err_commune_invalid' => 'This district is not recognized. Select it from the suggestions (real place name).',
+        'err_location_required' => 'Pick a place from the GeoNames list (city or locality).',
+        'err_location_invalid' => 'This place is not recognized. Select a suggestion from the list.',
+        'location_place' => 'City / locality',
+        'location_placeholder' => 'e.g. Kinshasa, Paris, Lubumbashi…',
+        'geo_pick_hint' => 'Global GeoNames search: type at least 2 letters, then pick a suggestion (do not invent a name).',
+        'preferences' => 'Account preferences',
+        'locale_label' => 'Interface language',
+        'locale_help' => 'French or English for menus and site messages.',
         'err_bio_length' => 'Bio is too long (max 5000 characters).',
         'err_phone_length' => 'Phone number is too long.',
         'err_birth_invalid' => 'Invalid birth date.',

@@ -144,6 +144,64 @@ try {
     die("Une erreur de connexion à la base de données est survenue.");
 }
 
+require_once __DIR__ . '/lib/GntomaGeonamesService.php';
+require_once __DIR__ . '/includes/gntoma_location_helpers.php';
+
+if (!function_exists('gntoma_normalize_user_code')) {
+    /**
+     * Code utilisateur GNTOMA : comparaisons et requêtes en majuscules (aligné sur la messagerie).
+     */
+    function gntoma_normalize_user_code(?string $code): ?string
+    {
+        if ($code === null) {
+            return null;
+        }
+        $t = strtoupper(trim($code));
+
+        return $t === '' ? null : $t;
+    }
+}
+
+if (!function_exists('gntoma_resolve_logged_in_user_code')) {
+    /**
+     * Code utilisateur connecté pour la messagerie et le journal.
+     * La session GNTOMA enregistre le code métier dans `user_id` (historique) ; on accepte aussi `user_code`.
+     * Retourne le `user_code` tel qu’en base (normalisé en majuscules) pour coller aux lignes `message_threads` / `message_credits`.
+     */
+    function gntoma_resolve_logged_in_user_code(PDO $pdo): ?string
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            return null;
+        }
+        $raw = $_SESSION['user_id'] ?? $_SESSION['user_code'] ?? null;
+        if ($raw === null) {
+            return null;
+        }
+        $asString = trim((string) $raw);
+        if ($asString === '') {
+            return null;
+        }
+        $normalized = gntoma_normalize_user_code($asString);
+        if ($normalized === null || $normalized === '') {
+            return null;
+        }
+        try {
+            $stmt = $pdo->prepare('SELECT user_code FROM users WHERE UPPER(TRIM(user_code)) = ? LIMIT 1');
+            $stmt->execute([$normalized]);
+            $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            if (is_array($row) && isset($row['user_code'])) {
+                $fromDb = gntoma_normalize_user_code((string) $row['user_code']);
+
+                return $fromDb ?? $normalized;
+            }
+        } catch (Throwable $e) {
+            error_log('gntoma_resolve_logged_in_user_code: ' . $e->getMessage());
+        }
+
+        return $normalized;
+    }
+}
+
 if (!function_exists('gntoma_generate_next_user_code')) {
     function gntoma_generate_next_user_code(PDO $pdo): string
     {
@@ -161,6 +219,127 @@ if (!function_exists('gntoma_ensure_message_credits')) {
             "INSERT INTO message_credits (user_code, total_credits, used_credits, remaining_credits) VALUES (?, ?, 0, ?) ON DUPLICATE KEY UPDATE user_code = user_code"
         );
         $stmt->execute([$userCode, $defaultCredits, $defaultCredits]);
+    }
+}
+
+if (!function_exists('gntoma_journal_reader_has_access')) {
+    /**
+     * Le lecteur peut lire un journal payant s'il figure dans journal_readers
+     * ou si au moins une demande d'accès a le statut « approved » (pas seule la dernière demande).
+     */
+    function gntoma_journal_reader_has_access(PDO $pdo, int $journalId, string $userCode): bool
+    {
+        $code = gntoma_normalize_user_code($userCode);
+        if ($code === null || $journalId < 1) {
+            return false;
+        }
+
+        try {
+            $jr = $pdo->prepare('
+                SELECT 1 FROM journal_readers
+                WHERE journal_id = ? AND UPPER(TRIM(user_code)) = ?
+                LIMIT 1
+            ');
+            $jr->execute([$journalId, $code]);
+            if ($jr->fetch()) {
+                return true;
+            }
+
+            $ar = $pdo->prepare("
+                SELECT 1 FROM access_requests
+                WHERE journal_id = ? AND UPPER(TRIM(requester_user_code)) = ?
+                  AND LOWER(TRIM(status)) = 'approved'
+                LIMIT 1
+            ");
+            $ar->execute([$journalId, $code]);
+
+            return (bool) $ar->fetch();
+        } catch (Throwable $e) {
+            error_log('gntoma_journal_reader_has_access: ' . $e->getMessage());
+
+            return false;
+        }
+    }
+}
+
+if (!function_exists('gntoma_journal_ensure_reader_row')) {
+    /**
+     * Répare journal_readers lorsqu'une approbation existe mais la ligne lecteur manque (anciennes données).
+     */
+    function gntoma_journal_ensure_reader_row(PDO $pdo, int $journalId, string $userCode): void
+    {
+        $code = gntoma_normalize_user_code($userCode);
+        if ($code === null || $journalId < 1) {
+            return;
+        }
+
+        try {
+            $exists = $pdo->prepare('
+                SELECT 1 FROM journal_readers
+                WHERE journal_id = ? AND UPPER(TRIM(user_code)) = ?
+                LIMIT 1
+            ');
+            $exists->execute([$journalId, $code]);
+            if ($exists->fetch()) {
+                return;
+            }
+
+            $approved = $pdo->prepare("
+                SELECT 1 FROM access_requests
+                WHERE journal_id = ? AND UPPER(TRIM(requester_user_code)) = ?
+                  AND LOWER(TRIM(status)) = 'approved'
+                LIMIT 1
+            ");
+            $approved->execute([$journalId, $code]);
+            if (!$approved->fetch()) {
+                return;
+            }
+
+            $pdo->prepare('
+                INSERT INTO journal_readers (journal_id, user_code, access_count)
+                VALUES (?, ?, 1)
+                ON DUPLICATE KEY UPDATE last_access_at = CURRENT_TIMESTAMP
+            ')->execute([$journalId, $code]);
+
+            $pdo->prepare('
+                UPDATE journals
+                SET reader_count = (SELECT COUNT(*) FROM journal_readers WHERE journal_id = ?)
+                WHERE id = ?
+            ')->execute([$journalId, $journalId]);
+        } catch (Throwable $e) {
+            error_log('gntoma_journal_ensure_reader_row: ' . $e->getMessage());
+        }
+    }
+}
+
+if (!function_exists('gntoma_journal_access_request_summary')) {
+    /**
+     * @return array{has_access: bool, latest: ?array<string, mixed>}
+     */
+    function gntoma_journal_access_request_summary(PDO $pdo, int $journalId, string $userCode): array
+    {
+        $code = gntoma_normalize_user_code($userCode);
+        $has_access = gntoma_journal_reader_has_access($pdo, $journalId, $userCode);
+        $latest = null;
+
+        if ($code !== null && $journalId > 0) {
+            try {
+                $stmt = $pdo->prepare("
+                    SELECT request_number, status, created_at, response_message, approved_at
+                    FROM access_requests
+                    WHERE journal_id = ? AND UPPER(TRIM(requester_user_code)) = ?
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                ");
+                $stmt->execute([$journalId, $code]);
+                $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                $latest = is_array($row) ? $row : null;
+            } catch (Throwable $e) {
+                error_log('gntoma_journal_access_request_summary: ' . $e->getMessage());
+            }
+        }
+
+        return ['has_access' => $has_access, 'latest' => $latest];
     }
 }
 
@@ -254,6 +433,60 @@ if (!function_exists('gntoma_payment_consume_csrf')) {
     }
 }
 
+if (!function_exists('gntoma_profile_csrf_token')) {
+    /** Jeton CSRF formulaires édition profil / upload photo (session). */
+    function gntoma_profile_csrf_token(): string
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            return '';
+        }
+        if (empty($_SESSION['gntoma_profile_csrf']) || !is_string($_SESSION['gntoma_profile_csrf'])) {
+            $_SESSION['gntoma_profile_csrf'] = bin2hex(random_bytes(16));
+        }
+
+        return $_SESSION['gntoma_profile_csrf'];
+    }
+}
+
+if (!function_exists('gntoma_profile_validate_csrf')) {
+    function gntoma_profile_validate_csrf(string $posted): bool
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            return false;
+        }
+        $expected = $_SESSION['gntoma_profile_csrf'] ?? '';
+
+        return is_string($expected) && $expected !== '' && hash_equals($expected, $posted);
+    }
+}
+
+if (!function_exists('gntoma_access_request_csrf_token')) {
+    /** Jeton CSRF pour les actions « suivre » / demande de suivi sur la page demande d'accès. */
+    function gntoma_access_request_csrf_token(): string
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            return '';
+        }
+        if (empty($_SESSION['gntoma_access_request_csrf']) || !is_string($_SESSION['gntoma_access_request_csrf'])) {
+            $_SESSION['gntoma_access_request_csrf'] = bin2hex(random_bytes(16));
+        }
+
+        return $_SESSION['gntoma_access_request_csrf'];
+    }
+}
+
+if (!function_exists('gntoma_access_request_validate_csrf')) {
+    function gntoma_access_request_validate_csrf(string $posted): bool
+    {
+        if (session_status() !== PHP_SESSION_ACTIVE) {
+            return false;
+        }
+        $expected = $_SESSION['gntoma_access_request_csrf'] ?? '';
+
+        return is_string($expected) && $expected !== '' && hash_equals($expected, $posted);
+    }
+}
+
 if (!function_exists('gntoma_unread_messages_in_inbox_count')) {
     /**
      * Messages non lus rattachés à une conversation de l'utilisateur uniquement
@@ -266,9 +499,9 @@ if (!function_exists('gntoma_unread_messages_in_inbox_count')) {
                 SELECT COUNT(*) AS c
                 FROM messages m
                 INNER JOIN message_threads t ON t.id = m.thread_id
-                WHERE m.recipient_user_code = ?
+                WHERE UPPER(TRIM(m.recipient_user_code)) = ?
                   AND m.is_read = 0
-                  AND (t.participant_1 = ? OR t.participant_2 = ?)
+                  AND (UPPER(TRIM(t.participant_1)) = ? OR UPPER(TRIM(t.participant_2)) = ?)
             ");
             $stmt->execute([$userCode, $userCode, $userCode]);
 

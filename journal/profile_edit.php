@@ -10,6 +10,7 @@ declare(strict_types=1);
 session_start();
 require_once 'config.php';
 require_once __DIR__ . '/i18n.php';
+require_once __DIR__ . '/notif_sound_toggle_inc.php';
 gntoma_init_locale_from_request();
 
 if (!isset($_SESSION['user_id'])) {
@@ -17,15 +18,28 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-$user_code = $_SESSION['user_id'];
+$user_code = gntoma_normalize_user_code((string) $_SESSION['user_id']) ?? '';
+if ($user_code === '') {
+    header("Location: ../index.php");
+    exit;
+}
 
-// Récupérer les infos actuelles
-$stmt = $pdo->prepare("SELECT * FROM users WHERE user_code = ? LIMIT 1");
+// Infos actuelles : uniquement la ligne dont le code correspond à la session normalisée
+$stmt = $pdo->prepare("SELECT * FROM users WHERE UPPER(TRIM(user_code)) = ? LIMIT 1");
 $stmt->execute([$user_code]);
 $user = $stmt->fetch();
 
 if (is_array($user) && !array_key_exists('profile_pic', $user)) {
     $user['profile_pic'] = null;
+}
+if (is_array($user) && !array_key_exists('commune', $user)) {
+    $user['commune'] = '';
+}
+if (is_array($user) && !array_key_exists('gender', $user)) {
+    $user['gender'] = '';
+}
+if (is_array($user) && !array_key_exists('birth_date', $user)) {
+    $user['birth_date'] = '';
 }
 
 if (!$user) {
@@ -33,27 +47,26 @@ if (!$user) {
     exit;
 }
 
-// Récupérer les crédits messages
+$canonical_code = gntoma_normalize_user_code((string) ($user['user_code'] ?? '')) ?? $user_code;
+
+// Crédits messages & stats
 try {
-    $credits_stmt = $pdo->prepare("SELECT remaining_credits, total_credits, used_credits FROM message_credits WHERE user_code = ?");
-    $credits_stmt->execute([$user_code]);
+    $credits_stmt = $pdo->prepare("SELECT remaining_credits, total_credits, used_credits FROM message_credits WHERE UPPER(TRIM(user_code)) = ?");
+    $credits_stmt->execute([$canonical_code]);
     $msg_credits = $credits_stmt->fetch();
     if (!$msg_credits) {
-        $pdo->prepare("INSERT INTO message_credits (user_code, total_credits, remaining_credits) VALUES (?, 100, 100)")->execute([$user_code]);
+        $pdo->prepare("INSERT INTO message_credits (user_code, total_credits, remaining_credits) VALUES (?, 100, 100)")->execute([$canonical_code]);
         $msg_credits = ['remaining_credits' => 100, 'total_credits' => 100, 'used_credits' => 0];
     }
 
-    // Messages non lus (inbox conversations uniquement)
-    $unread_count = gntoma_unread_messages_in_inbox_count($pdo, $user_code);
+    $unread_count = gntoma_unread_messages_in_inbox_count($pdo, $canonical_code);
 
-    // Nombre de conversations
     $threads_stmt = $pdo->prepare("SELECT COUNT(*) as total FROM message_threads WHERE participant_1 = ? OR participant_2 = ?");
-    $threads_stmt->execute([$user_code, $user_code]);
+    $threads_stmt->execute([$canonical_code, $canonical_code]);
     $threads_count = $threads_stmt->fetch()['total'] ?? 0;
 
-    // Nombre de journaux
-    $journals_stmt = $pdo->prepare("SELECT COUNT(*) as total FROM journals WHERE user_code = ?");
-    $journals_stmt->execute([$user_code]);
+    $journals_stmt = $pdo->prepare("SELECT COUNT(*) as total FROM journals WHERE UPPER(TRIM(user_code)) = ?");
+    $journals_stmt->execute([$canonical_code]);
     $journals_count = $journals_stmt->fetch()['total'] ?? 0;
 } catch (PDOException $e) {
     $msg_credits = ['remaining_credits' => 0, 'total_credits' => 0, 'used_credits' => 0];
@@ -64,44 +77,142 @@ try {
 
 $error = '';
 
-// Traitement du formulaire
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $first_name = trim($_POST['first_name'] ?? '');
-    $last_name = trim($_POST['last_name'] ?? '');
-    $gender = $_POST['gender'] ?? null;
-    $birth_date = $_POST['birth_date'] ?? null;
-    $city = trim($_POST['city'] ?? '');
-    $commune = trim($_POST['commune'] ?? '');
-    $country = trim($_POST['country'] ?? 'RDC');
-    $bio = trim($_POST['bio'] ?? '');
-    $phone = trim($_POST['phone'] ?? '');
-    $profile_visibility = $_POST['profile_visibility'] ?? 'public';
-    
-    try {
-        $update = $pdo->prepare("
-            UPDATE users 
-            SET first_name = ?, last_name = ?, gender = ?, birth_date = ?, 
-                city = ?, commune = ?, country = ?, bio = ?, phone = ?, 
-                profile_visibility = ?, updated_at = NOW()
-            WHERE user_code = ?
-        ");
-        $update->execute([
-            $first_name, $last_name, $gender, $birth_date,
-            $city, $commune, $country, $bio, $phone,
-            $profile_visibility, $user_code
-        ]);
-        
-        // Mise à jour de la session
-        $_SESSION['name'] = $first_name . ' ' . $last_name;
-        
-        header("Location: profile_edit.php?success=updated");
-        exit;
-    } catch (PDOException $e) {
-        $error = __('profile_edit.err_update');
+    $postedCsrf = (string) ($_POST['csrf'] ?? '');
+    if (!gntoma_profile_validate_csrf($postedCsrf)) {
+        $error = __('profile_edit.err_csrf');
+    } else {
+        $first_name = trim((string) ($_POST['first_name'] ?? ''));
+        $last_name = trim((string) ($_POST['last_name'] ?? ''));
+        $gender_raw = trim((string) ($_POST['gender'] ?? ''));
+        $birth_raw = trim((string) ($_POST['birth_date'] ?? ''));
+        $bio = trim((string) ($_POST['bio'] ?? ''));
+        $phone = trim((string) ($_POST['phone'] ?? ''));
+        $profile_visibility = (string) ($_POST['profile_visibility'] ?? 'public');
+
+        if ($first_name === '' || $last_name === '') {
+            $error = __('profile_edit.err_names_required');
+        } elseif (mb_strlen($first_name) > 80 || mb_strlen($last_name) > 80) {
+            $error = __('profile_edit.err_names_length');
+        } elseif ($gender_raw !== '' && !in_array($gender_raw, ['male', 'female', 'other'], true)) {
+            $error = __('profile_edit.err_gender');
+        } elseif (!in_array($profile_visibility, ['public', 'friends', 'private'], true)) {
+            $error = __('profile_edit.err_visibility');
+        } elseif (mb_strlen($bio) > 5000) {
+            $error = __('profile_edit.err_bio_length');
+        } elseif (mb_strlen($phone) > 50) {
+            $error = __('profile_edit.err_phone_length');
+        }
+
+        $gender = $gender_raw === '' ? null : $gender_raw;
+        $birth_date = null;
+        if ($error === '' && $birth_raw !== '') {
+            $bd = DateTimeImmutable::createFromFormat('Y-m-d', $birth_raw);
+            if ($bd === false || $bd->format('Y-m-d') !== $birth_raw) {
+                $error = __('profile_edit.err_birth_invalid');
+            } else {
+                $today = new DateTimeImmutable('today');
+                if ($bd > $today) {
+                    $error = __('profile_edit.err_birth_future');
+                } else {
+                    $age = $bd->diff($today)->y;
+                    if ($age < 13 || $age > 115) {
+                        $error = __('profile_edit.err_birth_age');
+                    } else {
+                        $birth_date = $birth_raw;
+                    }
+                }
+            }
+        }
+
+        $locale_pref = strtolower(trim((string) ($_POST['locale'] ?? '')));
+        if ($error === '' && in_array($locale_pref, ['fr', 'en'], true)) {
+            gntoma_set_locale($locale_pref);
+        }
+
+        $locationPlace = null;
+        if ($error === '') {
+            $locValidation = gntoma_profile_resolve_location_for_save($user, $_POST);
+            if (!$locValidation['ok']) {
+                $error = match ($locValidation['error'] ?? '') {
+                    'required' => __('profile_edit.err_location_required'),
+                    'unavailable' => __('geonames.error_unavailable'),
+                    default => __('profile_edit.err_location_invalid'),
+                };
+            } else {
+                $locationPlace = $locValidation['place'];
+            }
+        }
+
+        if ($error === '' && is_array($locationPlace)) {
+            try {
+                $legacyCity = (string) $locationPlace['name'];
+                $legacyCommune = $locationPlace['admin2'] ?? $locationPlace['admin1'] ?? null;
+                $legacyCountry = (string) ($locationPlace['country_name'] ?? $user['country'] ?? 'RDC');
+
+                if (gntoma_users_has_geonames_columns($pdo) && (int) ($locationPlace['geoname_id'] ?? 0) > 0) {
+                    gntoma_apply_user_location($pdo, $user_code, $locationPlace);
+                }
+
+                $update = $pdo->prepare("
+                    UPDATE users 
+                    SET first_name = ?, last_name = ?, gender = ?, birth_date = ?, 
+                        city = ?, commune = ?, country = ?, bio = ?, phone = ?, 
+                        profile_visibility = ?, updated_at = NOW()
+                    WHERE UPPER(TRIM(user_code)) = ?
+                ");
+                $update->execute([
+                    $first_name,
+                    $last_name,
+                    $gender,
+                    $birth_date,
+                    $legacyCity,
+                    $legacyCommune,
+                    $legacyCountry,
+                    $bio === '' ? null : $bio,
+                    $phone === '' ? null : $phone,
+                    $profile_visibility,
+                    $user_code,
+                ]);
+
+                $_SESSION['name'] = $first_name . ' ' . $last_name;
+
+                header('Location: profile_edit.php?success=updated');
+                exit;
+            } catch (PDOException $e) {
+                error_log('profile_edit update: ' . $e->getMessage());
+                $error = __('profile_edit.err_update');
+            }
+        }
+
+        if ($error !== '') {
+            $user['first_name'] = $first_name;
+            $user['last_name'] = $last_name;
+            $user['gender'] = $gender_raw;
+            $user['birth_date'] = $birth_raw;
+            $user['bio'] = $bio;
+            $user['phone'] = $phone;
+            $user['profile_visibility'] = $profile_visibility;
+        }
     }
 }
 
 $success = $_GET['success'] ?? null;
+
+require_once __DIR__ . '/includes/gntoma_location_picker_inc.php';
+$userLocation = gntoma_user_location_from_row($user);
+if ($userLocation === null) {
+    $legacyLabel = gntoma_location_label_from_parts(
+        (string) ($user['city'] ?? ''),
+        null,
+        isset($user['commune']) && $user['commune'] !== '' ? (string) $user['commune'] : null,
+        (string) ($user['country'] ?? '')
+    );
+    if ($legacyLabel !== '') {
+        $userLocation = ['geoname_id' => 0, 'label' => $legacyLabel];
+    }
+}
+$profileLocationLabel = is_array($userLocation) ? (string) ($userLocation['label'] ?? '') : '';
 ?>
 <!DOCTYPE html>
 <html lang="<?= htmlspecialchars(gntoma_html_lang(), ENT_QUOTES, 'UTF-8') ?>">
@@ -110,8 +221,8 @@ $success = $_GET['success'] ?? null;
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars(__('profile_edit.page_title'), ENT_QUOTES, 'UTF-8') ?></title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/gntoma-location-picker.css">
     <script>
         tailwind.config = {
             theme: {
@@ -121,28 +232,6 @@ $success = $_GET['success'] ?? null;
                 }
             }
         }
-
-        function selectGeo(name, type) {
-            if (type === 'city') {
-                document.getElementById('city-input').value = name;
-                document.getElementById('city-suggestions').innerHTML = '';
-                document.getElementById('city-suggestions').classList.add('hidden');
-            } else if (type === 'commune') {
-                document.getElementById('commune-input').value = name;
-                document.getElementById('commune-suggestions').innerHTML = '';
-                document.getElementById('commune-suggestions').classList.add('hidden');
-            }
-        }
-
-        // Cacher les suggestions quand on clique ailleurs
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('#city-input') && !e.target.closest('#city-suggestions')) {
-                document.getElementById('city-suggestions').classList.add('hidden');
-            }
-            if (!e.target.closest('#commune-input') && !e.target.closest('#commune-suggestions')) {
-                document.getElementById('commune-suggestions').classList.add('hidden');
-            }
-        });
     </script>
     <style>
         body { 
@@ -184,7 +273,7 @@ $success = $_GET['success'] ?? null;
                 </svg>
             </a>
             <h1 class="text-base sm:text-lg font-bold text-dark flex-1 text-center"><?= htmlspecialchars(__('profile_edit.heading'), ENT_QUOTES, 'UTF-8') ?></h1>
-            <div class="flex-shrink-0"><?= gntoma_lang_switch_markup() ?></div>
+            <div class="w-9 sm:w-10 flex-shrink-0" aria-hidden="true"></div>
         </div>
     </header>
 
@@ -218,32 +307,42 @@ $success = $_GET['success'] ?? null;
         <div class="bg-red-50 border border-red-200 rounded-2xl p-4">
             <p class="text-sm font-bold text-red-700 text-center"><?= htmlspecialchars(__('profile_edit.err_invalid_type'), ENT_QUOTES, 'UTF-8') ?></p>
         </div>
+        <?php elseif (isset($_GET['error']) && $_GET['error'] === 'csrf'): ?>
+        <div class="bg-red-50 border border-red-200 rounded-2xl p-4">
+            <p class="text-sm font-bold text-red-700 text-center"><?= htmlspecialchars(__('profile_edit.err_csrf'), ENT_QUOTES, 'UTF-8') ?></p>
+        </div>
+        <?php elseif (isset($_GET['error']) && $_GET['error'] === 'system'): ?>
+        <div class="bg-red-50 border border-red-200 rounded-2xl p-4">
+            <p class="text-sm font-bold text-red-700 text-center"><?= htmlspecialchars(__('profile_edit.err_system'), ENT_QUOTES, 'UTF-8') ?></p>
+        </div>
         <?php endif; ?>
 
         <!-- Photo de profil + identité rapide -->
-        <div class="glass-panel rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-6 shadow-sm">
+        <div id="section-photo" class="glass-panel rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-6 shadow-sm">
+            <form id="photo-form" action="profile_upload_pic.php" method="post" enctype="multipart/form-data" class="flex items-start gap-3 sm:gap-4">
+                <input type="hidden" name="csrf" value="<?= htmlspecialchars(gntoma_profile_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
                 <?php $profile_pic = !empty($user['profile_pic']) ? '../' . $user['profile_pic'] : '../images/user_default.png'; ?>
-                <div class="relative">
+                <div class="relative flex-shrink-0">
                     <img src="<?= htmlspecialchars($profile_pic) ?>" alt="<?= htmlspecialchars(__('profile_edit.photo_alt'), ENT_QUOTES, 'UTF-8') ?>" class="w-16 h-16 sm:w-20 sm:h-20 rounded-[1.25rem] sm:rounded-[1.5rem] border-2 border-white object-cover shadow-md">
-                    <label for="photo" class="absolute -bottom-2 -right-2 bg-primary text-white p-1.5 sm:p-2 rounded-xl cursor-pointer hover:bg-blue-600 transition-all shadow-lg">
+                    <label for="profile_pic_input" class="absolute -bottom-2 -right-2 bg-primary text-white p-1.5 sm:p-2 rounded-xl cursor-pointer hover:bg-blue-600 transition-all shadow-lg">
                         <svg class="h-4 w-4 sm:h-5 sm:w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 6H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                     </label>
-                    <input type="file" id="photo" name="photo" accept="image/*" class="hidden" onchange="document.getElementById('photo-form').submit()">
+                    <input type="file" id="profile_pic_input" name="profile_pic" accept="image/jpeg,image/png,image/gif,image/webp" class="hidden" onchange="document.getElementById('photo-form').submit()">
                 </div>
-                <div class="flex-1">
+                <div class="flex-1 min-w-0">
                     <p class="font-black text-dark text-sm sm:text-base"><?= htmlspecialchars(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')) ?></p>
-                    <p class="text-primary font-bold text-xs sm:text-sm"><?= htmlspecialchars($user['user_code']) ?></p>
-                    <?php if (!empty($user['city'])): ?>
+                    <p class="text-primary font-bold text-xs sm:text-sm"><?= htmlspecialchars((string) ($user['user_code'] ?? ''), ENT_QUOTES, 'UTF-8') ?></p>
+                    <?php if ($profileLocationLabel !== ''): ?>
                     <p class="text-xs text-gray-500 mt-1 flex items-center space-x-1">
-                        <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /></svg>
-                        <span><?= htmlspecialchars($user['city']) ?><?= !empty($user['commune']) ? ', ' . htmlspecialchars($user['commune']) : '' ?></span>
+                        <svg class="h-3 w-3 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /></svg>
+                        <span><?= htmlspecialchars($profileLocationLabel, ENT_QUOTES, 'UTF-8') ?></span>
                     </p>
                     <?php endif; ?>
                 </div>
-            </div>
+            </form>
 
             <!-- Statistiques rapides -->
             <div class="grid grid-cols-3 gap-3 mt-5 pt-5 border-t border-gray-100">
@@ -355,28 +454,57 @@ $success = $_GET['success'] ?? null;
             </div>
         </div>
 
+        <!-- Son des notifications (même clé localStorage que le dashboard) -->
+        <div id="section-notifications" class="glass-panel rounded-[1.5rem] sm:rounded-[2rem] p-4 sm:p-6 shadow-sm">
+            <h2 class="text-base sm:text-lg font-bold text-dark mb-2 flex items-center space-x-2">
+                <svg class="h-4 w-4 sm:h-5 sm:w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0a3 3 0 11-6 0h6z" />
+                </svg>
+                <span><?= htmlspecialchars(__('profile_edit.notifications_section'), ENT_QUOTES, 'UTF-8') ?></span>
+            </h2>
+            <p class="text-xs text-gray-500 mb-4 leading-relaxed"><?= htmlspecialchars(__('profile_edit.sound_setting_hint'), ENT_QUOTES, 'UTF-8') ?></p>
+            <div class="flex flex-wrap items-center gap-3">
+                <?php gntoma_render_notif_sound_toggle_button('inline-flex items-center gap-2 bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm font-bold text-dark hover:bg-gray-100 transition-all'); ?>
+            </div>
+        </div>
+
         <!-- Formulaire profil -->
-        <form method="POST" class="space-y-6">
+        <form method="POST" class="space-y-6" id="profile-main-form">
+            <input type="hidden" name="csrf" value="<?= htmlspecialchars(gntoma_profile_csrf_token(), ENT_QUOTES, 'UTF-8') ?>">
+
+            <!-- Préférences -->
+            <div id="section-preferences" class="glass-panel rounded-[2rem] p-6 shadow-sm scroll-mt-24">
+                <h2 class="text-lg font-bold text-dark mb-4"><?= htmlspecialchars(__('profile_edit.preferences'), ENT_QUOTES, 'UTF-8') ?></h2>
+                <div>
+                    <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('profile_edit.locale_label'), ENT_QUOTES, 'UTF-8') ?></label>
+                    <select name="locale" class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none">
+                        <option value="fr" <?= gntoma_locale() === 'fr' ? 'selected' : '' ?>><?= htmlspecialchars(__('dashboard.lang_fr'), ENT_QUOTES, 'UTF-8') ?> — Français</option>
+                        <option value="en" <?= gntoma_locale() === 'en' ? 'selected' : '' ?>><?= htmlspecialchars(__('dashboard.lang_en'), ENT_QUOTES, 'UTF-8') ?> — English</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-2"><?= htmlspecialchars(__('profile_edit.locale_help'), ENT_QUOTES, 'UTF-8') ?></p>
+                </div>
+            </div>
             
             <!-- Identité -->
-            <div class="glass-panel rounded-[2rem] p-6 shadow-sm">
+            <div id="section-identity" class="glass-panel rounded-[2rem] p-6 shadow-sm scroll-mt-24">
                 <h2 class="text-lg font-bold text-dark mb-4 flex items-center space-x-2">
                     <svg class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                     <span><?= htmlspecialchars(__('profile_edit.identity'), ENT_QUOTES, 'UTF-8') ?></span>
                 </h2>
+                <p class="text-xs text-gray-500 mb-4 leading-relaxed"><?= htmlspecialchars(__('profile_edit.demographics_help'), ENT_QUOTES, 'UTF-8') ?></p>
                 
                 <div class="space-y-4">
                     <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('profile_edit.first_name'), ENT_QUOTES, 'UTF-8') ?></label>
-                            <input type="text" name="first_name" value="<?= htmlspecialchars($user['first_name'] ?? '') ?>" 
+                            <input type="text" name="first_name" value="<?= htmlspecialchars($user['first_name'] ?? '') ?>" required
                                    class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('profile_edit.last_name'), ENT_QUOTES, 'UTF-8') ?></label>
-                            <input type="text" name="last_name" value="<?= htmlspecialchars($user['last_name'] ?? '') ?>" 
+                            <input type="text" name="last_name" value="<?= htmlspecialchars($user['last_name'] ?? '') ?>" required
                                    class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none">
                         </div>
                     </div>
@@ -401,7 +529,7 @@ $success = $_GET['success'] ?? null;
             </div>
 
             <!-- Localisation -->
-            <div class="glass-panel rounded-[2rem] p-6 shadow-sm">
+            <div id="section-location" class="glass-panel rounded-[2rem] p-6 shadow-sm scroll-mt-24">
                 <h2 class="text-lg font-bold text-dark mb-4 flex items-center space-x-2">
                     <svg class="h-5 w-5 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
@@ -409,37 +537,9 @@ $success = $_GET['success'] ?? null;
                     </svg>
                     <span><?= htmlspecialchars(__('profile_edit.location'), ENT_QUOTES, 'UTF-8') ?></span>
                 </h2>
+                <p class="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 mb-4"><?= htmlspecialchars(__('profile_edit.geo_pick_hint'), ENT_QUOTES, 'UTF-8') ?></p>
                 
-                <div class="space-y-4">
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="relative">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('profile_edit.city'), ENT_QUOTES, 'UTF-8') ?></label>
-                            <input type="text" name="city" id="city-input" value="<?= htmlspecialchars($user['city'] ?? '') ?>" 
-                                   placeholder="<?= htmlspecialchars(__('profile_edit.city_placeholder'), ENT_QUOTES, 'UTF-8') ?>"
-                                   hx-get="geo_autocomplete.php?q={value}&type=city"
-                                   hx-trigger="keyup changed delay:300ms"
-                                   hx-target="#city-suggestions"
-                                   class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none">
-                            <div id="city-suggestions" class="absolute z-10 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-lg hidden max-h-48 overflow-y-auto"></div>
-                        </div>
-                        <div class="relative">
-                            <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('profile_edit.commune'), ENT_QUOTES, 'UTF-8') ?></label>
-                            <input type="text" name="commune" id="commune-input" value="<?= htmlspecialchars($user['commune'] ?? '') ?>" 
-                                   placeholder="<?= htmlspecialchars(__('profile_edit.commune_placeholder'), ENT_QUOTES, 'UTF-8') ?>"
-                                   hx-get="geo_autocomplete.php?q={value}&type=commune"
-                                   hx-trigger="keyup changed delay:300ms"
-                                   hx-target="#commune-suggestions"
-                                   class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none">
-                            <div id="commune-suggestions" class="absolute z-10 w-full bg-white border border-gray-200 rounded-xl mt-1 shadow-lg hidden max-h-48 overflow-y-auto"></div>
-                        </div>
-                    </div>
-                    
-                    <div>
-                        <label class="block text-xs font-bold text-gray-500 uppercase mb-2"><?= htmlspecialchars(__('profile_edit.country'), ENT_QUOTES, 'UTF-8') ?></label>
-                        <input type="text" name="country" value="<?= htmlspecialchars($user['country'] ?? 'RDC') ?>" 
-                               class="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none">
-                    </div>
-                </div>
+                <?php gntoma_render_location_picker(['id' => 'profile', 'initial' => $userLocation, 'required' => false]); ?>
             </div>
 
             <!-- Contact & Bio -->
@@ -494,5 +594,7 @@ $success = $_GET['success'] ?? null;
         </form>
     </main>
 
+<?php gntoma_render_notif_sound_toggle_scripts(); ?>
+    <script src="assets/js/gntoma-location-picker.js"></script>
 </body>
 </html>
