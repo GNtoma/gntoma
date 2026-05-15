@@ -5,8 +5,14 @@ require_once 'config.php';
 require_once __DIR__ . '/i18n.php';
 gntoma_init_locale_from_request();
 
-// 1. SÉCURITÉ : Redirection si non connecté
-if (!isset($_SESSION['user_id'])) {
+// 1. SÉCURITÉ : session avec code métier (clé historique user_id ou alias user_code)
+if (!isset($_SESSION['user_id']) && !isset($_SESSION['user_code'])) {
+    header("Location: ../index.php");
+    exit;
+}
+
+$session_user_code = gntoma_resolve_logged_in_user_code($pdo);
+if ($session_user_code === null || $session_user_code === '') {
     header("Location: ../index.php");
     exit;
 }
@@ -23,8 +29,8 @@ try {
     }
 
     try {
-        $stmt = $pdo->prepare("SELECT name, user_code, sub_expires_at, access_request_credits, {$profilePicSelect} FROM users WHERE user_code = ?");
-        $stmt->execute([$_SESSION['user_id']]);
+        $stmt = $pdo->prepare("SELECT name, user_code, sub_expires_at, access_request_credits, {$profilePicSelect} FROM users WHERE UPPER(TRIM(user_code)) = ?");
+        $stmt->execute([$session_user_code]);
         $user = $stmt->fetch();
     } catch (PDOException $e) {
         if (stripos($e->getMessage(), 'profile_pic') === false) {
@@ -32,8 +38,8 @@ try {
         }
 
         error_log('Fallback profile pic dashboard GNTOMA : ' . $e->getMessage());
-        $stmt = $pdo->prepare("SELECT name, user_code, sub_expires_at, access_request_credits, NULL AS profile_pic FROM users WHERE user_code = ?");
-        $stmt->execute([$_SESSION['user_id']]);
+        $stmt = $pdo->prepare("SELECT name, user_code, sub_expires_at, access_request_credits, NULL AS profile_pic FROM users WHERE UPPER(TRIM(user_code)) = ?");
+        $stmt->execute([$session_user_code]);
         $user = $stmt->fetch();
     }
 
@@ -74,7 +80,7 @@ try {
 
     $user = [
         'name' => (string) ($_SESSION['user_name'] ?? $_SESSION['name'] ?? 'Utilisateur'),
-        'user_code' => (string) $_SESSION['user_id'],
+        'user_code' => $session_user_code,
         'profile_pic' => null,
     ];
     $time_remaining = __('dashboard.time_unavailable');
@@ -110,37 +116,6 @@ try {
             color: #1D1D1F;
             position: relative;
             min-height: 100vh;
-            /* Fond type tableau de bord : dégradé maille avec halos colorés */
-            background:
-                radial-gradient(ellipse at 15% 15%, rgba(0, 122, 255, 0.12) 0%, transparent 50%),
-                radial-gradient(ellipse at 85% 25%, rgba(162, 89, 255, 0.10) 0%, transparent 50%),
-                radial-gradient(ellipse at 50% 80%, rgba(255, 149, 0, 0.08) 0%, transparent 50%),
-                radial-gradient(ellipse at 25% 70%, rgba(0, 200, 180, 0.07) 0%, transparent 45%),
-                radial-gradient(ellipse at 75% 55%, rgba(255, 59, 130, 0.06) 0%, transparent 40%),
-                linear-gradient(160deg, #EEF2FF 0%, #F0F9FF 30%, #FDF4FF 60%, #FFF7ED 100%);
-        }
-        /* Motif de points subtil sur le fond */
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background-image:
-                radial-gradient(rgba(0, 122, 255, 0.08) 1.2px, transparent 1.2px);
-            background-size: 28px 28px;
-            pointer-events: none;
-            z-index: -1;
-        }
-        /* Overlay de brume légère pour adoucir */
-        body::after {
-            content: '';
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background:
-                radial-gradient(circle at 50% 50%, rgba(255,255,255,0.4) 0%, transparent 70%);
-            pointer-events: none;
-            z-index: -1;
         }
         .journal-card-pattern {
             background: 

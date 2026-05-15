@@ -251,15 +251,8 @@ $profileLocationLabel = is_array($userLocation) ? (string) ($userLocation['label
         }
     </script>
     <style>
-        body { 
-            font-family: 'Outfit', sans-serif; 
-            background-color: #f8fafc;
-            background-image: 
-                radial-gradient(at 10% 0%, rgba(99, 102, 241, 0.08) 0px, transparent 50%),
-                radial-gradient(at 90% 10%, rgba(249, 115, 22, 0.08) 0px, transparent 50%),
-                radial-gradient(at 90% 90%, rgba(168, 85, 247, 0.08) 0px, transparent 50%),
-                radial-gradient(at 10% 90%, rgba(59, 130, 246, 0.08) 0px, transparent 50%);
-            background-attachment: fixed;
+        body {
+            font-family: 'Outfit', sans-serif;
             -webkit-font-smoothing: antialiased;
         }
         .glass-panel { background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(25px); }

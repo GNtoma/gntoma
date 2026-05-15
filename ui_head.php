@@ -49,12 +49,53 @@ body.gntoma-body-ready {
     width: 0;
     height: 0;
 }
+html.gntoma-ui-ready body {
+    background: transparent !important;
+}
 .gntoma-ui-background {
     position: fixed;
     inset: 0;
     overflow: hidden;
     pointer-events: none;
-    z-index: -5;
+    z-index: -1;
+}
+.gntoma-ui-background::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at top left, rgba(90, 200, 250, 0.20), transparent 28%),
+        radial-gradient(circle at top right, rgba(124, 58, 237, 0.13), transparent 24%),
+        radial-gradient(circle at bottom left, rgba(0, 122, 255, 0.12), transparent 24%),
+        linear-gradient(145deg, #edf6ff 0%, #f8fbff 46%, #f5f7fb 100%);
+}
+.gntoma-confetti {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+}
+.gntoma-confetti-piece {
+    position: absolute;
+    top: -12vh;
+    left: calc(var(--left) * 1%);
+    width: var(--w);
+    height: var(--h);
+    background: var(--c);
+    border-radius: var(--r);
+    opacity: 0.88;
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+    animation: gntomaConfettiFall var(--dur) linear var(--delay) infinite;
+    will-change: transform;
+}
+.gntoma-confetti-layer-0 {
+    opacity: 0.55;
+    filter: blur(0.3px);
+}
+.gntoma-confetti-layer-1 {
+    opacity: 0.78;
+}
+.gntoma-confetti-layer-2 {
+    opacity: 0.95;
 }
 .gntoma-ui-grid,
 .gntoma-ui-noise,
@@ -201,6 +242,23 @@ body.gntoma-body-ready {
 @keyframes gntomaFloat {
     0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
     50% { transform: translate3d(0, 24px, 0) scale(1.06); }
+}
+@keyframes gntomaConfettiFall {
+    0% {
+        transform: translate3d(0, -10vh, 0) rotate(0deg);
+    }
+    100% {
+        transform: translate3d(var(--sway), 115vh, 0) rotate(720deg);
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .gntoma-confetti-piece {
+        animation: none;
+        display: none;
+    }
+    .gntoma-orb {
+        animation: none;
+    }
 }
 @keyframes gntomaFadeBody {
     from { opacity: 0; transform: translateY(4px); }

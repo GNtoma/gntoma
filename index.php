@@ -10,8 +10,8 @@ session_start();
 require_once __DIR__ . '/journal/i18n.php';
 gntoma_init_locale_from_request();
 
-// 1. REDIRECTION SI CONNECTÉ
-if (isset($_SESSION['user_id'])) {
+// 1. REDIRECTION SI CONNECTÉ (session GNTOMA : code dans user_id et/ou user_code)
+if (!empty($_SESSION['user_id']) || !empty($_SESSION['user_code'])) {
     header("Location: journal/dashboard_6.php");
     exit;
 }
@@ -20,7 +20,24 @@ if (isset($_SESSION['user_id'])) {
 $step = $_GET['step'] ?? 'login'; // Peut être 'login', 'forgot', ou 'reset'
 $reset_code = strtoupper(trim((string)($_GET['code'] ?? '')));
 $masked_email = trim((string)($_GET['masked_email'] ?? ''));
-$error_msg = isset($_GET['error']) ? htmlspecialchars($_GET['error']) : "";
+$raw_error = isset($_GET['error']) ? trim((string) $_GET['error']) : '';
+$journal_error_keys = [
+    'journal_invalid_code' => 'landing.err_journal_invalid_code',
+    'journal_author_not_found' => 'landing.err_journal_author_not_found',
+    'journal_not_found' => 'landing.err_journal_not_found',
+    'journal_search_error' => 'landing.err_journal_search_error',
+    'journal_invalid_id' => 'landing.err_journal_invalid_id',
+    'journal_system_error' => 'landing.err_journal_system_error',
+];
+if ($raw_error !== '' && isset($journal_error_keys[$raw_error])) {
+    $error_msg = htmlspecialchars(__($journal_error_keys[$raw_error]), ENT_QUOTES, 'UTF-8');
+} elseif ($raw_error !== '') {
+    $error_msg = htmlspecialchars($raw_error, ENT_QUOTES, 'UTF-8');
+} else {
+    $error_msg = '';
+}
+$login_redirect_next = isset($_GET['next']) ? trim((string) $_GET['next']) : '';
+$login_redirect_jid = (int) ($_GET['jid'] ?? 0);
 $success_msg = isset($_GET['success']) ? htmlspecialchars($_GET['success']) : "";
 ?>
 <!DOCTYPE html>
@@ -51,22 +68,6 @@ $success_msg = isset($_GET['success']) ? htmlspecialchars($_GET['success']) : ""
     </script>
     <style>
         body { color: #1D1D1F; -webkit-font-smoothing: antialiased; margin: 0; overflow-x: hidden; }
-
-        /* --- NEIGE ANIMÉE --- */
-        .snow-wrapper {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: linear-gradient(135deg, #e6eff9 0%, #f4f7fb 50%, #ffffff 100%);
-            z-index: -2; overflow: hidden;
-        }
-        .snow-layer {
-            position: absolute; top: -100vh; left: 0; width: 100vw; height: 200vh;
-            background-image: radial-gradient(4px 4px at 100px 50px, rgba(255,255,255,0.8), transparent),
-                              radial-gradient(6px 6px at 200px 150px, rgba(255,255,255,0.9), transparent),
-                              radial-gradient(3px 3px at 300px 250px, rgba(255,255,255,0.7), transparent),
-                              radial-gradient(5px 5px at 400px 350px, rgba(255,255,255,0.8), transparent);
-            background-size: 600px 600px; animation: fall 20s linear infinite;
-        }
-        @keyframes fall { 0% { transform: translateY(0); } 100% { transform: translateY(100vh); } }
 
         /* --- GLASSMORPHISM --- */
         .glass-panel {
@@ -128,8 +129,15 @@ $success_msg = isset($_GET['success']) ? htmlspecialchars($_GET['success']) : ""
                         <div class="text-center mb-6">
                             <h2 class="text-2xl font-bold text-dark tracking-tight"><?= htmlspecialchars(__('landing.login_title'), ENT_QUOTES, 'UTF-8') ?></h2>
                             <p class="text-gray-500 text-sm mt-1 font-medium"><?= htmlspecialchars(__('landing.login_sub'), ENT_QUOTES, 'UTF-8') ?></p>
+                            <?php if ($login_redirect_next === 'journal_access' && $login_redirect_jid > 0): ?>
+                            <p class="text-primary text-xs font-semibold mt-3 px-2"><?= htmlspecialchars(__('landing.login_after_journal_access'), ENT_QUOTES, 'UTF-8') ?></p>
+                            <?php endif; ?>
                         </div>
                         <form action="journal/auth_login_process_3.php" method="POST" class="space-y-5">
+                            <?php if ($login_redirect_next === 'journal_access' && $login_redirect_jid > 0): ?>
+                            <input type="hidden" name="next" value="journal_access">
+                            <input type="hidden" name="jid" value="<?= (int) $login_redirect_jid ?>">
+                            <?php endif; ?>
                             <div class="relative group">
                                 <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-400 group-focus-within:text-primary smooth-transition" viewBox="0 0 20 20" fill="currentColor"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" /><path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" /></svg>
@@ -153,15 +161,16 @@ $success_msg = isset($_GET['success']) ? htmlspecialchars($_GET['success']) : ""
                             </button>
                         </form>
 
-                        <!-- Options Carnet de Loyer et Pharmacie -->
+                        <!-- Carnet de loyer & Pharmacie : dossiers et BDD séparés ; hors périmètre compte journaux GNTOMA -->
                         <div class="mt-6 pt-6 border-t border-gray-100">
-                            <p class="text-center text-xs font-bold text-gray-400 uppercase tracking-wider mb-4"><?= htmlspecialchars(__('landing.services_title'), ENT_QUOTES, 'UTF-8') ?></p>
+                            <p class="text-center text-xs font-bold text-gray-400 uppercase tracking-wider mb-2"><?= htmlspecialchars(__('landing.services_title'), ENT_QUOTES, 'UTF-8') ?></p>
+                            <p class="text-center text-[11px] text-gray-500 font-medium leading-snug mb-4 px-1"><?= htmlspecialchars(__('landing.services_note'), ENT_QUOTES, 'UTF-8') ?></p>
                             <div class="flex gap-3">
-                                <a href="carnetdeloyer/index.php" class="flex-1 inline-flex items-center justify-center bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-2xl shadow-lg active:scale-95 smooth-transition space-x-2">
+                                <a href="carnetdeloyer/index.php" rel="noopener noreferrer" title="<?= htmlspecialchars(__('landing.services_link_carnet_title'), ENT_QUOTES, 'UTF-8') ?>" class="flex-1 inline-flex items-center justify-center bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded-2xl shadow-lg active:scale-95 smooth-transition space-x-2">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" /></svg>
                                     <span class="text-sm"><?= htmlspecialchars(__('landing.carnet_loyer'), ENT_QUOTES, 'UTF-8') ?></span>
                                 </a>
-                                <a href="pharmacie/index.php" class="flex-1 inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-2xl shadow-lg active:scale-95 smooth-transition space-x-2">
+                                <a href="pharmacie/index.php" rel="noopener noreferrer" title="<?= htmlspecialchars(__('landing.services_link_pharmacie_title'), ENT_QUOTES, 'UTF-8') ?>" class="flex-1 inline-flex items-center justify-center bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-3 rounded-2xl shadow-lg active:scale-95 smooth-transition space-x-2">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
                                     <span class="text-sm"><?= htmlspecialchars(__('landing.pharmacie'), ENT_QUOTES, 'UTF-8') ?></span>
                                 </a>
