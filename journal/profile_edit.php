@@ -193,6 +193,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user['bio'] = $bio;
             $user['phone'] = $phone;
             $user['profile_visibility'] = $profile_visibility;
+            if (is_array($locationPlace)) {
+                $user['city'] = (string) ($locationPlace['name'] ?? $user['city'] ?? '');
+                $user['commune'] = $locationPlace['admin2'] ?? $locationPlace['admin1'] ?? $user['commune'] ?? null;
+                $user['country'] = (string) ($locationPlace['country_name'] ?? $user['country'] ?? '');
+                if ((int) ($locationPlace['geoname_id'] ?? 0) > 0) {
+                    $user['location_geoname_id'] = (int) $locationPlace['geoname_id'];
+                }
+            }
         }
     }
 }
@@ -201,6 +209,15 @@ $success = $_GET['success'] ?? null;
 
 require_once __DIR__ . '/includes/gntoma_location_picker_inc.php';
 $userLocation = gntoma_user_location_from_row($user);
+if ($userLocation === null && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    $postedGid = (int) ($_POST['location_geoname_id'] ?? 0);
+    if ($postedGid > 0) {
+        $resolved = gntoma_location_from_request(['location_geoname_id' => $postedGid]);
+        if ($resolved['ok'] && is_array($resolved['place'])) {
+            $userLocation = $resolved['place'];
+        }
+    }
+}
 if ($userLocation === null) {
     $legacyLabel = gntoma_location_label_from_parts(
         (string) ($user['city'] ?? ''),
@@ -539,7 +556,7 @@ $profileLocationLabel = is_array($userLocation) ? (string) ($userLocation['label
                 </h2>
                 <p class="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-xl px-3 py-2 mb-4"><?= htmlspecialchars(__('profile_edit.geo_pick_hint'), ENT_QUOTES, 'UTF-8') ?></p>
                 
-                <?php gntoma_render_location_picker(['id' => 'profile', 'initial' => $userLocation, 'required' => false]); ?>
+                <?php gntoma_render_location_picker(['id' => 'profile', 'initial' => $userLocation, 'required' => true]); ?>
             </div>
 
             <!-- Contact & Bio -->

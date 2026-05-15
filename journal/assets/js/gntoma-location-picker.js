@@ -53,11 +53,30 @@
             return;
         }
 
-        var initialId = parseInt(this.hidden.value || '0', 10);
+        var initialId = parseInt(
+            this.root.getAttribute('data-initial-geoname-id') || this.hidden.value || '0',
+            10
+        );
         var initialLabel = (this.input.getAttribute('data-initial-label') || '').trim();
         if (initialId > 0 && initialLabel !== '') {
             this.setSelection(initialId, initialLabel, false);
             this.input.value = initialLabel;
+        }
+
+        var form = this.root.closest('form');
+        if (form) {
+            form.addEventListener('submit', function () {
+                var q = (self.input.value || '').trim();
+                var lastLabel = (self.input.getAttribute('data-last-label') || '').trim();
+                var hiddenVal = parseInt(self.hidden.value || '0', 10);
+                if (
+                    initialId > 0 &&
+                    hiddenVal < 1 &&
+                    (q === '' || q === initialLabel || (lastLabel !== '' && q === lastLabel))
+                ) {
+                    self.hidden.value = String(initialId);
+                }
+            });
         }
 
         this.input.addEventListener(

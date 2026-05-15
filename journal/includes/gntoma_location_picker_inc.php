@@ -24,11 +24,13 @@ function gntoma_render_location_picker(array $picker = []): void
     $inputClass = trim((string) ($picker['input_class'] ?? 'w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm focus:ring-2 focus:ring-primary outline-none'));
     $minLen = GntomaGeonamesService::minQueryLength();
     $hasSelection = $geonameId > 0 && $label !== '';
+    $requireHidden = $required && !($geonameId < 1 && $label !== '');
     ?>
     <div
         id="gntoma-loc-<?= htmlspecialchars($pickerId, ENT_QUOTES, 'UTF-8') ?>"
         class="gntoma-loc<?= $hasSelection ? ' has-selection' : '' ?>"
         data-gntoma-location-picker
+        data-initial-geoname-id="<?= $geonameId > 0 ? (int) $geonameId : '' ?>"
         data-search-url="geonames/search.php"
         data-min-len="<?= (int) $minLen ?>"
         <?= $countryAttr !== '' ? 'data-country="' . htmlspecialchars($countryAttr, ENT_QUOTES, 'UTF-8') . '"' : '' ?>
@@ -41,7 +43,7 @@ function gntoma_render_location_picker(array $picker = []): void
         aria-expanded="false"
         aria-haspopup="listbox"
     >
-        <input type="hidden" name="location_geoname_id" data-gntoma-loc-id value="<?= $geonameId > 0 ? (int) $geonameId : '' ?>"<?= $required ? ' required' : '' ?>>
+        <input type="hidden" name="location_geoname_id" data-gntoma-loc-id value="<?= $geonameId > 0 ? (int) $geonameId : '' ?>"<?= $requireHidden ? ' required' : '' ?>>
         <label class="block text-xs font-bold text-gray-500 uppercase mb-2" for="gntoma-loc-input-<?= htmlspecialchars($pickerId, ENT_QUOTES, 'UTF-8') ?>">
             <?= htmlspecialchars(__('profile_edit.location_place'), ENT_QUOTES, 'UTF-8') ?>
         </label>
