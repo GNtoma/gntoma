@@ -1,9 +1,9 @@
-﻿<?php
+<?php
 /**
  * PROJET : GNTOMA
  * FICHIER : journal/auth_register_1.php
  * VERSION : 1
- * DESCRIPTION : Page d'inscription (Design Lucide, Validation Vue.js, 6 caractÃ¨res minimum).
+ * DESCRIPTION : Page d'inscription (Design Lucide, Validation Vue.js, 6 caractères minimum).
  */
 
 ini_set('display_errors', '1');
@@ -84,9 +84,7 @@ if (isset($_GET['error'])) {
 </head>
 <body class="min-h-screen flex flex-col items-center justify-center p-4">
 
-    <?php require_once dirname(__DIR__) . '/ui_background.php'; ?>\r\n        <div class="snow-layer"></div>
-        <div class="snow-layer"></div>
-    </div>
+    <?php require_once dirname(__DIR__) . '/ui_background.php'; ?>
 
     <div id="register-app" class="w-full max-w-md animate__animated animate__zoomIn animate__faster z-10 mt-12 md:mt-0 gntoma-page-enter">
         <div class="glass-panel-light gntoma-section-shell rounded-[2.5rem] p-8 md:p-10 relative overflow-hidden">
